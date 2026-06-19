@@ -1,0 +1,39 @@
+<view class="tab-pad">
+  <view class="header">
+    <view class="header__title">资料下载</view>
+    <view class="header__sub">老师群文件 · 共 {{list.length}} 个</view>
+  </view>
+
+  <view class="section-pad gap" style="padding-top: 24rpx;">
+    <!-- 骨架屏 -->
+    <block wx:if="{{loading}}">
+      <view wx:for="{{[1,2,3,4]}}" wx:key="*this" class="card dl">
+        <view class="skeleton" style="width:80rpx; height:80rpx; border-radius:24rpx"></view>
+        <view class="dl__body">
+          <view class="skeleton sk-line" style="width:70%"></view>
+          <view class="skeleton sk-line" style="width:40%; margin-bottom:0"></view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 空状态 -->
+    <view wx:elif="{{list.length === 0}}" class="empty">
+      <image class="empty__icon" src="{{fileIcon}}" />
+      <view class="empty__txt">暂无资料</view>
+      <view class="empty__txt" style="font-size:22rpx; margin-top:8rpx;">运行 scripts/qq_sync.py 同步群文件</view>
+    </view>
+
+    <block wx:else>
+      <view wx:for="{{list}}" wx:key="id" class="card dl" data-item="{{item}}" bindtap="onDownload">
+        <view class="dl__icon" style="background:{{item.wash}}"><image class="dl__img" src="{{item.iconSrc}}" /></view>
+        <view class="dl__body">
+          <view class="dl__name">{{item.name}}</view>
+          <view class="dl__meta muted">
+            <text wx:if="{{item.subject}}">{{item.subject}} · </text>{{item.sizeText}}
+          </view>
+        </view>
+        <view class="dl__action">下载</view>
+      </view>
+    </block>
+  </view>
+</view>

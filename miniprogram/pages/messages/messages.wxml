@@ -1,0 +1,56 @@
+<view class="tab-pad">
+  <view class="header">
+    <view class="header__title">老师通知</view>
+    <view class="header__sub">今日 · 共 {{list.length}} 条消息</view>
+  </view>
+
+  <scroll-view scroll-x class="chips">
+    <view
+      wx:for="{{filters}}"
+      wx:key="key"
+      class="chip {{filter === item.key ? 'chip--active' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="onFilter"
+    >{{item.label}}</view>
+  </scroll-view>
+
+  <view class="section-pad gap">
+    <!-- 骨架屏 -->
+    <block wx:if="{{loading}}">
+      <view wx:for="{{[1,2,3]}}" wx:key="*this" class="card">
+        <view class="skeleton sk-line" style="width:40%"></view>
+        <view class="skeleton sk-line" style="width:100%"></view>
+        <view class="skeleton sk-line" style="width:80%; margin-bottom:0"></view>
+      </view>
+    </block>
+
+    <!-- 空状态 -->
+    <view wx:elif="{{list.length === 0}}" class="empty">
+      <image class="empty__icon" src="{{ic.file}}" />
+      <view class="empty__txt">该分类暂无消息</view>
+    </view>
+
+    <block wx:else>
+      <view wx:for="{{list}}" wx:key="id" class="card msg {{item.important ? 'msg--star' : ''}}">
+        <view class="msg__row">
+          <view class="avatar">{{item.avatar}}</view>
+          <view class="msg__body">
+            <view class="msg__top">
+              <text class="msg__teacher">{{item.teacher}}</text>
+              <image wx:if="{{item.important}}" class="msg__star" src="{{ic.star}}" />
+              <text class="msg__tag" style="color:{{item.style.ink}}">[{{item.style.label}}]</text>
+            </view>
+            <view class="msg__content">{{item.content}}</view>
+            <view class="msg__foot">
+              <view class="muted msg__time"><image class="ic14" src="{{ic.clock}}" /> {{item.time}}</view>
+              <view class="msg__actions">
+                <view class="msg__btn"><image class="ic14" src="{{ic.printer}}" /> 打印</view>
+                <view class="msg__btn msg__btn--muted"><image class="ic14" src="{{ic.file}}" /> 备注</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

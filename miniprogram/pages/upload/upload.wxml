@@ -1,0 +1,53 @@
+<view class="tab-pad">
+  <view class="topbar">
+    <view class="back-btn" bindtap="back"><image class="ic20w" src="{{ic.x}}" /></view>
+    <view class="topbar__title">上传错题</view>
+  </view>
+
+  <view class="section-pad gap" style="padding-top:28rpx;">
+    <view class="card">
+      <!-- 学科 -->
+      <view class="field-label">选择学科</view>
+      <view class="subj-grid">
+        <view
+          wx:for="{{subjects}}"
+          wx:key="name"
+          class="subj {{subject === item.name ? 'subj--on' : ''}}"
+          style="{{subject === item.name ? 'background:' + item.ink + ';color:#fff' : ''}}"
+          data-s="{{item.name}}"
+          bindtap="pickSubject"
+        >{{item.name}}</view>
+      </view>
+
+      <!-- 题目图片（可多张） -->
+      <view class="field-label" style="margin-top:40rpx;">
+        题目图片 <text class="muted" style="font-weight:400;font-size:22rpx;">（可一次选多张，AI 自动识别命名）</text>
+      </view>
+      <view class="img-grid">
+        <view wx:for="{{images}}" wx:key="*this" class="thumb">
+          <image src="{{item}}" mode="aspectFill" class="thumb__img" />
+          <view class="thumb__del" data-index="{{index}}" catchtap="removeImage">×</view>
+        </view>
+        <view wx:if="{{images.length < 9}}" class="add-tile" bindtap="chooseImage">
+          <image class="add-tile__ic" src="{{ic.camera}}" />
+          <text class="add-tile__txt">拍照 / 选图</text>
+        </view>
+      </view>
+
+      <!-- 补充说明（选填） -->
+      <view class="field-label" style="margin-top:40rpx;">补充说明 <text class="muted" style="font-weight:400;font-size:22rpx;">（选填）</text></view>
+      <textarea
+        class="textarea"
+        placeholder="例：这题我错在第二步，想知道为什么"
+        value="{{note}}"
+        bindinput="onNote"
+        maxlength="200"
+      />
+    </view>
+
+    <button class="btn-primary" disabled="{{uploading || images.length === 0}}" bindtap="submit">
+      <image wx:if="{{!uploading}}" class="ic20w" src="{{ic.upload}}" />
+      {{uploading ? progress : (images.length > 0 ? '上传并分析（' + images.length + '）' : '上传并分析')}}
+    </button>
+  </view>
+</view>

@@ -1,0 +1,30 @@
+.ic20w { width: 34rpx; height: 34rpx; }
+
+.field-label { font-size: 28rpx; font-weight: 600; margin-bottom: 20rpx; }
+
+.subj-grid { display: flex; flex-wrap: wrap; gap: 16rpx; }
+.subj { padding: 14rpx 30rpx; border-radius: 999rpx; font-size: 26rpx; font-weight: 500;
+  color: var(--muted-fg); background: var(--muted); transition: transform 0.12s; }
+.subj--on { font-weight: 700; }
+
+/* 多图网格 */
+.img-grid { display: flex; flex-wrap: wrap; gap: 18rpx; }
+.thumb { position: relative; width: 200rpx; height: 200rpx; border-radius: 24rpx; overflow: hidden; }
+.thumb__img { width: 100%; height: 100%; }
+.thumb__del {
+  position: absolute; right: 8rpx; top: 8rpx; width: 40rpx; height: 40rpx;
+  border-radius: 50%; background: rgba(0,0,0,0.55); color: #fff;
+  font-size: 30rpx; line-height: 40rpx; text-align: center;
+}
+.add-tile {
+  width: 200rpx; height: 200rpx; border-radius: 24rpx;
+  border: 3rpx dashed #cbd5e0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12rpx;
+}
+.add-tile__ic { width: 48rpx; height: 48rpx; }
+.add-tile__txt { font-size: 22rpx; color: var(--muted-fg); }
+
+.textarea {
+  width: 100%; min-height: 120rpx; background: #f0f4f8;
+  border-radius: 24rpx; padding: 24rpx; font-size: 28rpx; line-height: 1.6;
+}

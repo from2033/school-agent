@@ -1,0 +1,59 @@
+<view wx:if="{{m}}" class="tab-pad">
+  <view class="topbar">
+    <view class="back-btn" bindtap="back"><image class="ic20w" src="{{ic.x}}" /></view>
+    <view class="topbar__title">错题详情</view>
+  </view>
+
+  <view class="section-pad gap" style="padding-top:28rpx;">
+    <!-- 题目卡 -->
+    <view class="card">
+      <view class="d-top">
+        <view class="subject-badge" style="background:{{subjectStyle.ink}}">{{m.subject}}</view>
+        <view class="d-top__body">
+          <view class="d-top__topic">{{m.topic}}</view>
+          <view class="muted" style="font-size:22rpx;">{{m.created_at}}</view>
+        </view>
+        <view class="badge badge--{{m.difficulty}}">
+          {{m.difficulty === 'hard' ? '难' : m.difficulty === 'medium' ? '中' : '易'}}
+        </view>
+      </view>
+
+      <image wx:if="{{imageUrl}}" src="{{imageUrl}}" mode="widthFix" class="d-img" />
+      <view wx:else class="d-img-placeholder muted"><image class="ic44" src="{{ic.camera}}" /> 题目图片区域</view>
+
+      <view class="tags">
+        <text wx:for="{{m.tags}}" wx:key="*this" class="tag">{{item}}</text>
+      </view>
+    </view>
+
+    <!-- 重点关注（彩色等级标签） -->
+    <view wx:if="{{m.focus_points.length}}" class="card">
+      <view class="d-label"><image class="ic24" src="{{ic.target}}" /> 重点关注</view>
+      <view class="focus-wrap">
+        <view wx:for="{{m.focus_points}}" wx:key="text" class="focus focus--{{item.level}}">
+          <view class="focus__dot"></view>
+          <text class="focus__txt">{{item.text}}</text>
+          <text class="focus__lvl">{{item.level === 'high' ? '重点' : item.level === 'medium' ? '巩固' : '提醒'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 错误分析（一句话总述） -->
+    <view wx:if="{{m.analysis}}" class="card">
+      <view class="d-label"><image class="ic24" src="{{ic.alert}}" /> 错误分析</view>
+      <view class="d-text">{{m.analysis}}</view>
+    </view>
+
+    <!-- 改进建议（分步） -->
+    <view wx:if="{{m.steps.length}}" class="card">
+      <view class="d-label"><image class="ic24" src="{{ic.zap}}" /> 改进建议</view>
+      <view class="step" wx:for="{{m.steps}}" wx:key="*this">
+        <view class="step__no">{{index + 1}}</view>
+        <view class="step__txt">{{item}}</view>
+      </view>
+    </view>
+
+    <button class="btn-primary"><image class="ic20w" src="{{ic.printerWhite}}" /> 打印此题</button>
+    <button class="btn-secondary" bindtap="reupload"><image class="ic20" src="{{ic.upload}}" /> 再上传一题</button>
+  </view>
+</view>

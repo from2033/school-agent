@@ -1,0 +1,69 @@
+<view class="tab-pad">
+  <view class="header home-header">
+    <view class="home-header__hello">你好，家长 👋</view>
+    <view class="home-header__title">小明的学习管家</view>
+    <view class="home-header__sub">初三 · 班主任：李老师</view>
+    <view class="stat-row">
+      <view wx:for="{{statTiles}}" wx:key="key" class="stat">
+        <view class="stat__num">{{item.n}}</view>
+        <view class="stat__lbl">{{item.label}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="home-body gap">
+    <view class="card">
+      <view class="card-title-xs">快捷功能</view>
+      <view class="quick-grid">
+        <view wx:for="{{quick}}" wx:key="label" class="quick" data-action="{{item.action}}" bindtap="onQuick">
+          <view class="quick__icon" style="background:{{item.wash}}"><image class="quick__img" src="{{item.src}}" /></view>
+          <view class="quick__lbl">{{item.label}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="row-between" style="margin-bottom:12rpx;">
+        <text class="card-title">薄弱环节分析</text>
+        <text class="muted" style="font-size:21rpx;">近30天</text>
+      </view>
+      <canvas type="2d" id="radar" class="radar-canvas"></canvas>
+      <view class="insight insight--bad"><image class="insight__ic" src="{{ic.alert}}" />物理掌握度最低（54%），主要集中在力学受力分析，建议本周重点攻克。</view>
+      <view class="insight insight--good"><image class="insight__ic" src="{{ic.check}}" />历史表现优秀（91%），可适当减少复习时间，将精力转移至薄弱学科。</view>
+    </view>
+
+    <view class="card">
+      <view class="row-between" style="margin-bottom:18rpx;">
+        <text class="card-title">最近错题</text>
+        <view class="link" bindtap="goMistakes">查看全部 <image class="chev" src="{{ic.chevron}}" /></view>
+      </view>
+      <view wx:for="{{recent}}" wx:key="id" class="recent {{index < recent.length - 1 ? 'recent--div' : ''}}">
+        <view class="subject-dot" style="background:{{item.ink}}">{{item.subject}}</view>
+        <view class="recent__body">
+          <view class="recent__topic">{{item.topic}}</view>
+          <view class="muted recent__date">{{item.created_at}}</view>
+        </view>
+        <view class="badge badge--{{item.difficulty}}">
+          {{item.difficulty === 'hard' ? '难' : item.difficulty === 'medium' ? '中' : '易'}}
+        </view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="row-between" style="margin-bottom:18rpx;">
+        <text class="card-title">今日群消息</text>
+        <view class="link" bindtap="goMessages">查看全部 <image class="chev" src="{{ic.chevron}}" /></view>
+      </view>
+      <view wx:for="{{important}}" wx:key="id" class="imsg" style="background:{{item.meta.wash}}">
+        <view class="avatar-sm">{{item.avatar}}</view>
+        <view class="imsg__body">
+          <view class="imsg__top">
+            <text class="imsg__teacher">{{item.teacher}}</text>
+            <text class="imsg__tag" style="color:{{item.meta.ink}}">[{{item.meta.label}}]</text>
+          </view>
+          <view class="imsg__content">{{item.content}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

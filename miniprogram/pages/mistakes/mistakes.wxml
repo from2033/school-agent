@@ -1,0 +1,66 @@
+<view class="tab-pad">
+  <view class="header">
+    <view class="header__title">错题本</view>
+    <view class="header__sub">共 {{total}} 道错题</view>
+  </view>
+
+  <scroll-view scroll-x class="chips">
+    <view
+      wx:for="{{subjects}}"
+      wx:key="*this"
+      class="chip {{filter === item ? 'chip--active' : ''}}"
+      data-s="{{item}}"
+      bindtap="onFilter"
+    >{{item}}</view>
+  </scroll-view>
+
+  <view class="section-pad">
+    <view class="card chart-card">
+      <view class="chart-title">各科错题分布</view>
+      <canvas type="2d" id="barChart" class="bar-canvas"></canvas>
+    </view>
+  </view>
+
+  <view class="section-pad list-wrap">
+    <view wx:if="{{selectedCount > 0}}" class="sel-bar">
+      <text class="sel-bar__txt">已选 {{selectedCount}} 道</text>
+      <view class="sel-bar__btn" bindtap="printSelected"><image class="ic16" src="{{ic.printerWhite}}" /> 打印选中</view>
+    </view>
+
+    <view wx:if="{{loading}}" class="loading-list">
+      <view wx:for="{{[1,2,3,4]}}" wx:key="*this" class="card mrow">
+        <view class="skeleton" style="width:80rpx;height:80rpx;border-radius:22rpx"></view>
+        <view class="mrow__body">
+          <view class="skeleton sk-line" style="width:70%"></view>
+          <view class="skeleton sk-line" style="width:40%;margin-bottom:0"></view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:elif="{{list.length === 0}}" class="empty">
+      <image class="empty__icon" src="{{ic.book}}" />
+      <view class="empty__txt">还没有错题，点右下角 + 上传</view>
+    </view>
+
+    <view wx:else class="mistake-items">
+      <view wx:for="{{list}}" wx:key="id" class="card mrow {{selected[item.id] ? 'mrow--on' : ''}}">
+        <view class="radio {{selected[item.id] ? 'radio--on' : ''}}" data-id="{{item.id}}" catchtap="toggleSelect">
+          <view wx:if="{{selected[item.id]}}" class="radio__dot"></view>
+        </view>
+        <view class="subject-badge" style="background:{{item.ink}}">{{item.subject}}</view>
+        <view class="mrow__body" data-id="{{item.id}}" bindtap="openDetail">
+          <view class="mrow__topic">{{item.topic}}</view>
+          <view class="muted mrow__date">{{item.created_at}}</view>
+        </view>
+        <view class="mrow__right" data-id="{{item.id}}" bindtap="openDetail">
+          <view class="badge badge--{{item.difficulty}}">
+            {{item.difficulty === 'hard' ? '难' : item.difficulty === 'medium' ? '中' : '易'}}
+          </view>
+          <image class="ic16" src="{{ic.chevron}}" />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="fab" bindtap="goUpload"><image class="fab__img" src="{{ic.plusWhite}}" /></view>
+</view>

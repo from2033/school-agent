@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/mistakes/mistakes",
+    "pages/mistake-detail/mistake-detail",
+    "pages/upload/upload",
+    "pages/messages/messages",
+    "pages/downloads/downloads",
+    "pages/print/print"
+  ],
+  "window": {
+    "navigationStyle": "custom",
+    "backgroundColor": "#f5f7fb",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "custom": true,
+    "color": "#6b7a8d",
+    "selectedColor": "#0d6e6e",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "首页" },
+      { "pagePath": "pages/mistakes/mistakes", "text": "错题本" },
+      { "pagePath": "pages/messages/messages", "text": "通知" },
+      { "pagePath": "pages/downloads/downloads", "text": "下载" },
+      { "pagePath": "pages/print/print", "text": "打印" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

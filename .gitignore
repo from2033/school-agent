@@ -1,0 +1,33 @@
+# === 密钥 / 配置（绝不提交）===
+server/.env
+.env
+*.local
+
+# === 运行时数据 ===
+server/app.db
+server/uploads/
+server/files/
+server/_demo_chat.txt
+
+# === Python ===
+server/.venv/
+.venv/
+__pycache__/
+*.pyc
+
+# === Node / 前端构建 ===
+node_modules/
+dist/
+build/
+
+# === 大二进制 / 可重新下载的安装包 ===
+tools/napcat/*.zip
+tools/napcat/NapCatInstaller-v1.4/
+*.exe
+
+# === 杂项 ===
+.DS_Store
+*.log
+
+# 本地引导脚本（含服务器 IP，不入库）
+setup-windows-ssh.sh

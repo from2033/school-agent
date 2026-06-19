@@ -1,0 +1,13 @@
+.dl { display: flex; align-items: center; gap: 24rpx; }
+.dl__icon {
+  width: 80rpx; height: 80rpx; border-radius: 24rpx; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.dl__img { width: 40rpx; height: 40rpx; }
+.dl__body { flex: 1; min-width: 0; }
+.dl__name { font-size: 28rpx; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl__meta { font-size: 22rpx; margin-top: 6rpx; }
+.dl__action {
+  flex-shrink: 0; font-size: 24rpx; font-weight: 600; color: #fff;
+  background: var(--primary); padding: 12rpx 28rpx; border-radius: 24rpx;
+}

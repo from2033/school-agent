@@ -1,0 +1,10 @@
+.venv/
+.env
+app.db
+uploads/*
+files/*
+!uploads/.gitkeep
+!files/.gitkeep
+__pycache__/
+*.pyc
+_demo_chat.txt

@@ -1,0 +1,29 @@
+.row-between { display: flex; align-items: center; justify-content: space-between; }
+.title-sm { font-size: 28rpx; font-weight: 600; }
+.link { font-size: 24rpx; color: var(--primary); font-weight: 500; }
+
+.printer { display: flex; align-items: center; gap: 24rpx; }
+.printer__icon { width: 88rpx; height: 88rpx; border-radius: 24rpx; background: #dcfce7;
+  display: flex; align-items: center; justify-content: center; }
+.ic40 { width: 48rpx; height: 48rpx; }
+.ic20w { width: 34rpx; height: 34rpx; }
+.printer__body { flex: 1; }
+.printer__name { font-size: 28rpx; font-weight: 600; }
+.printer__status { font-size: 22rpx; color: #16a34a; margin-top: 6rpx; }
+.printer__tag { font-size: 22rpx; color: #15803d; background: #dcfce7; padding: 8rpx 18rpx; border-radius: 16rpx; }
+
+.pitem { display: flex; align-items: center; gap: 20rpx; padding: 22rpx; border-radius: 24rpx; background: var(--muted); margin-bottom: 16rpx; }
+.pitem--on { background: var(--secondary); }
+.pitem__label { flex: 1; min-width: 0; font-size: 26rpx; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pitem__tag { font-size: 20rpx; padding: 4rpx 16rpx; border-radius: 999rpx; font-weight: 500; }
+.pitem__tag--m { background: #ccfbf1; color: #0f766e; }
+.pitem__tag--n { background: #fef3c7; color: #b45309; }
+
+.setting-row { padding: 14rpx 0; }
+.setting-val { font-size: 26rpx; font-weight: 500; }
+
+.success { display: flex; flex-direction: column; align-items: center; gap: 16rpx; background: #f0fdf4; text-align: center; }
+.success__icon { width: 96rpx; height: 96rpx; border-radius: 50%; background: #dcfce7; color: #16a34a;
+  display: flex; align-items: center; justify-content: center; font-size: 48rpx; }
+.success__title { font-weight: 700; color: #15803d; font-size: 30rpx; }
+.success__sub { font-size: 22rpx; color: #16a34a; }

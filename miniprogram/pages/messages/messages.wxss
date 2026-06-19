@@ -1,0 +1,23 @@
+.msg--star { box-shadow: 0 0 0 2rpx #fde68a, 0 3rpx 12rpx rgba(28,51,84,0.065); }
+.msg__row { display: flex; gap: 22rpx; }
+.avatar {
+  width: 78rpx; height: 78rpx; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; background: var(--primary); font-size: 27rpx; font-weight: 700;
+}
+.msg__body { flex: 1; min-width: 0; }
+.msg__top { display: flex; align-items: center; gap: 10rpx; margin-bottom: 9rpx; }
+.msg__teacher { font-size: 27rpx; font-weight: 600; }
+.msg__star { width: 23rpx; height: 23rpx; }
+.msg__tag { margin-left: auto; font-size: 21rpx; font-weight: 600; }
+.msg__content { font-size: 26rpx; line-height: 1.62; color: var(--card-fg); }
+.msg__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 21rpx; }
+.msg__time { display: flex; align-items: center; gap: 6rpx; font-size: 21rpx; }
+.ic14 { width: 23rpx; height: 23rpx; }
+.msg__actions { display: flex; gap: 12rpx; }
+.msg__btn {
+  padding: 9rpx 18rpx; border-radius: 14rpx;
+  display: flex; align-items: center; gap: 6rpx;
+  color: var(--primary); background: var(--secondary); font-size: 21rpx; font-weight: 500;
+}
+.msg__btn--muted { color: var(--muted-fg); background: var(--muted); }
