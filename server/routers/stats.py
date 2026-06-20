@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List
 
 from fastapi import APIRouter, Depends
@@ -8,27 +9,45 @@ from models import MistakeCountPoint, RadarPoint
 
 router = APIRouter(prefix="/api/stats", tags=["stats"])
 
-SUBJECTS = ["数学", "语文", "英语", "物理", "化学", "历史"]
+# 小学三年级核心科目，作为薄弱分析/学科范围的基础轴
+CORE = ["语文", "数学", "英语"]
 
-# 掌握度雷达图数据（与 App.tsx radarData 一致；可后续改为按错题量动态计算）
-RADAR = {
-    "数学": 68, "语文": 85, "英语": 72, "物理": 54, "化学": 78, "历史": 91,
-}
+# 错题难度对掌握度的扣分权重（越难扣得越多）
+DIFFICULTY_PENALTY = {"hard": 14, "medium": 9, "easy": 5}
+
+
+def studied_subjects(conn) -> List[str]:
+    """所学科目 = 核心科目 + 错题表里出现过的其它科目（去重、核心在前）。"""
+    rows = conn.execute("SELECT DISTINCT subject FROM mistakes").fetchall()
+    extra = [r["subject"] for r in rows if r["subject"] and r["subject"] not in CORE]
+    return CORE + extra
+
+
+@router.get("/subjects", response_model=List[str])
+def subjects(user=Depends(current_user)):
+    with db() as conn:
+        return studied_subjects(conn)
 
 
 @router.get("/radar", response_model=List[RadarPoint])
 def radar(user=Depends(current_user)):
-    return [RadarPoint(subject=s, value=RADAR[s]) for s in SUBJECTS]
+    """薄弱环节：按真实错题计算各科掌握度（无错题=100，错题越多/越难=越低，下限 40）。"""
+    with db() as conn:
+        subs = studied_subjects(conn)
+        rows = conn.execute("SELECT subject, difficulty FROM mistakes").fetchall()
+    penalty = defaultdict(int)
+    for r in rows:
+        penalty[r["subject"]] += DIFFICULTY_PENALTY.get(r["difficulty"], 9)
+    return [RadarPoint(subject=s, value=max(40, 100 - penalty[s])) for s in subs]
 
 
 @router.get("/mistake-count", response_model=List[MistakeCountPoint])
 def mistake_count(user=Depends(current_user)):
-    """各科错题数。基于真实错题表统计，没有的学科补 0。"""
+    """各科错题数：真实统计，按所学科目返回（可为 0）。"""
     with db() as conn:
+        subs = studied_subjects(conn)
         rows = conn.execute(
             "SELECT subject, COUNT(*) AS c FROM mistakes GROUP BY subject"
         ).fetchall()
     counts = {r["subject"]: r["c"] for r in rows}
-    # 与原型一致地给个基础量，避免新库柱状图过于稀疏
-    base = {"数学": 12, "语文": 4, "英语": 8, "物理": 15, "化学": 6, "历史": 2}
-    return [MistakeCountPoint(subject=s, count=max(counts.get(s, 0), base[s])) for s in SUBJECTS]
+    return [MistakeCountPoint(subject=s, count=counts.get(s, 0)) for s in subs]

@@ -1,8 +1,27 @@
 <view class="tab-pad">
   <view class="header">
-    <view class="header__title">资料下载</view>
-    <view class="header__sub">老师群文件 · 共 {{list.length}} 个</view>
+    <view class="row-between">
+      <view>
+        <view class="header__title">文件</view>
+        <view class="header__sub">{{dateLabel}} · 共 {{list.length}} 个</view>
+      </view>
+      <picker mode="date" value="{{date}}" bindchange="onDate">
+        <view class="datepick">
+          <image class="datepick__ic" src="{{calendarIcon}}" />{{date}}
+        </view>
+      </picker>
+    </view>
   </view>
+
+  <scroll-view wx:if="{{subjects.length > 1}}" scroll-x class="chips">
+    <view
+      wx:for="{{subjects}}"
+      wx:key="*this"
+      class="chip {{filter === item ? 'chip--active' : ''}}"
+      data-s="{{item}}"
+      bindtap="onFilter"
+    >{{item}}</view>
+  </scroll-view>
 
   <view class="section-pad gap" style="padding-top: 24rpx;">
     <!-- 骨架屏 -->
@@ -19,8 +38,8 @@
     <!-- 空状态 -->
     <view wx:elif="{{list.length === 0}}" class="empty">
       <image class="empty__icon" src="{{fileIcon}}" />
-      <view class="empty__txt">暂无资料</view>
-      <view class="empty__txt" style="font-size:22rpx; margin-top:8rpx;">运行 scripts/qq_sync.py 同步群文件</view>
+      <view class="empty__txt">{{dateLabel}}暂无文件</view>
+      <view class="empty__txt" style="font-size:22rpx; margin-top:8rpx;">点右上角日期查看其他日期</view>
     </view>
 
     <block wx:else>
@@ -29,10 +48,10 @@
         <view class="dl__body">
           <view class="dl__name">{{item.name}}</view>
           <view class="dl__meta muted">
-            <text wx:if="{{item.subject}}">{{item.subject}} · </text>{{item.sizeText}}
+            <text wx:if="{{item.dateText}}">{{item.dateText}} · </text>{{item.sizeText}}
           </view>
         </view>
-        <view class="dl__action">下载</view>
+        <view class="dl__action">去打印</view>
       </view>
     </block>
   </view>

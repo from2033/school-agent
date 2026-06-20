@@ -2,6 +2,7 @@ const { request } = require('../../utils/request');
 const { getCanvas, drawRadar } = require('../../utils/chart');
 const { icon } = require('../../utils/icons');
 const { sub } = require('../../utils/subjects');
+const { today } = require('../../utils/date');
 
 const MSG_META = {
   homework: { ink: '#2563eb', wash: '#eff6ff', label: '作业' },
@@ -24,7 +25,7 @@ Page({
     statTiles: [
       { key: 'mistakes', n: 0, label: '累计错题' },
       { key: 'messages', n: 0, label: '今日消息' },
-      { key: 'prints', n: 3, label: '待打印' },
+      { key: 'files', n: 0, label: '今日文件' },
     ],
     recent: [],
     important: [],
@@ -33,6 +34,7 @@ Page({
       alert: icon('alert', '#dc2626'),
       check: icon('check', '#16a34a'),
     },
+    radarEmpty: false,
   },
 
   onShow() {
@@ -40,21 +42,30 @@ Page({
       this.getTabBar().setData({ selected: 0 });
     }
     this.loadData();
-    this.loadRadar();
   },
 
   loadData() {
+    const day = today();
     request('/api/mistakes').then((list) => {
       const recent = list.slice(0, 3).map((m) => ({ ...m, ...sub(m.subject) }));
       const tiles = this.data.statTiles.slice();
       tiles[0].n = list.length;
-      this.setData({ recent, statTiles: tiles });
+      // 没有错题时不画"全 100"的误导雷达，显示空状态
+      const radarEmpty = list.length === 0;
+      this.setData({ recent, statTiles: tiles, radarEmpty }, () => {
+        if (!radarEmpty) this.loadRadar();
+      });
     });
-    request('/api/messages').then((list) => {
+    request('/api/messages?date=' + day).then((list) => {
       const important = list.filter((m) => m.important).map((m) => ({ ...m, meta: MSG_META[m.type] }));
       const tiles = this.data.statTiles.slice();
       tiles[1].n = list.length;
       this.setData({ important, statTiles: tiles });
+    });
+    request('/api/downloads?date=' + day).then((list) => {
+      const tiles = this.data.statTiles.slice();
+      tiles[2].n = list.length;
+      this.setData({ statTiles: tiles });
     });
   },
 
@@ -68,8 +79,9 @@ Page({
 
   onQuick(e) {
     const action = e.currentTarget.dataset.action;
-    if (action === 'upload') {
-      wx.navigateTo({ url: '/pages/upload/upload' });
+    // upload / print 为普通页面（非 tab），用 navigateTo
+    if (action === 'upload' || action === 'print') {
+      wx.navigateTo({ url: '/pages/' + action + '/' + action });
     } else {
       wx.switchTab({ url: '/pages/' + action + '/' + action });
     }

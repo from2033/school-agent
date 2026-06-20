@@ -1,15 +1,10 @@
 const { upload } = require('../../utils/request');
 const { icon } = require('../../utils/icons');
-const { SUB } = require('../../utils/subjects');
 
-const SUBJECTS = ['数学', '语文', '英语', '物理', '化学', '历史']
-  .map((name) => ({ name, ...SUB[name] }));
 const MAX = 9;
 
 Page({
   data: {
-    subjects: SUBJECTS,
-    subject: '数学',
     note: '',
     images: [],          // 本地临时路径数组
     uploading: false,
@@ -23,7 +18,6 @@ Page({
   },
 
   back() { wx.navigateBack(); },
-  pickSubject(e) { this.setData({ subject: e.currentTarget.dataset.s }); },
   onNote(e) { this.setData({ note: e.detail.value }); },
 
   chooseImage() {
@@ -59,7 +53,7 @@ Page({
     this.setData({ uploading: true });
 
     const total = this.data.images.length;
-    const formData = { subject: this.data.subject, note: this.data.note };
+    const formData = { note: this.data.note };
     const results = [];
 
     try {
@@ -77,7 +71,8 @@ Page({
         }
       }, 600);
     } catch (e) {
-      wx.showToast({ title: '上传失败，请重试', icon: 'none' });
+      const detail = e && e.data && e.data.detail;
+      wx.showToast({ title: detail || '上传失败，请重试', icon: 'none' });
       this.setData({ uploading: false, progress: '' });
     }
   },

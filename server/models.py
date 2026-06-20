@@ -22,7 +22,8 @@ class Mistake(BaseModel):
     id: int
     subject: str
     topic: str
-    image_path: Optional[str] = None
+    image_path: Optional[str] = None      # 首图（向后兼容）
+    images: List[str] = []                # 该题全部图片（支持多图）
     analysis: Optional[str] = None        # 一句话总述
     focus_points: List[FocusPoint] = []   # 重点关注（带等级，前端上色）
     steps: List[str] = []                 # 分步改进建议
@@ -37,8 +38,10 @@ class Message(BaseModel):
     avatar: str
     content: str
     time: str
+    date: Optional[str] = None   # 消息日期 YYYY-MM-DD
     type: str
     important: bool = False
+    images: List[str] = []   # 图片 URL（后端 /uploads 服务）
 
 
 class Download(BaseModel):

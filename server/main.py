@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 import config
 from db import init_db
-from routers import auth, downloads, messages, mistakes, onebot, stats
+from routers import auth, downloads, messages, mistakes, onebot, papers, stats
 
 app = FastAPI(title="小明的学习管家 API")
 
@@ -29,6 +29,7 @@ app.include_router(auth.router)
 app.include_router(mistakes.router)
 app.include_router(messages.router)
 app.include_router(downloads.router)
+app.include_router(papers.router)
 app.include_router(stats.router)
 app.include_router(onebot.router)
 

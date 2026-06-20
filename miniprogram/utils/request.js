@@ -2,13 +2,14 @@
 const { BASE_URL } = require('./config');
 
 function request(path, options = {}, retried = false) {
-  const { method = 'GET', data, header = {} } = options;
+  const { method = 'GET', data, header = {}, timeout } = options;
   const token = wx.getStorageSync('token');
   return new Promise((resolve, reject) => {
     wx.request({
       url: BASE_URL + path,
       method,
       data,
+      ...(timeout ? { timeout } : {}),
       header: {
         'content-type': 'application/json',
         ...(token ? { Authorization: 'Bearer ' + token } : {}),
@@ -51,10 +52,16 @@ function upload(path, filePath, formData = {}) {
       formData,
       header: token ? { Authorization: 'Bearer ' + token } : {},
       success(res) {
+        let body;
         try {
-          resolve(JSON.parse(res.data));
+          body = JSON.parse(res.data);
         } catch (e) {
-          reject(res);
+          body = res.data;
+        }
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(body);
+        } else {
+          reject({ statusCode: res.statusCode, data: body });
         }
       },
       fail: reject,

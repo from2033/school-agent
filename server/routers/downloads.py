@@ -1,5 +1,5 @@
 import io
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
@@ -12,9 +12,15 @@ router = APIRouter(prefix="/api/downloads", tags=["downloads"])
 
 
 @router.get("", response_model=List[Download])
-def list_downloads(user=Depends(current_user)):
+def list_downloads(date: Optional[str] = None, user=Depends(current_user)):
     with db() as conn:
-        rows = conn.execute("SELECT * FROM downloads ORDER BY id DESC").fetchall()
+        if date:
+            rows = conn.execute(
+                "SELECT * FROM downloads WHERE date(created_at) = ? ORDER BY id DESC",
+                (date,),
+            ).fetchall()
+        else:
+            rows = conn.execute("SELECT * FROM downloads ORDER BY id DESC").fetchall()
     return [
         Download(
             id=r["id"], name=r["name"], subject=r["subject"],

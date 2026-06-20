@@ -1,13 +1,17 @@
 .chart-card { padding: 24rpx 28rpx 14rpx; }
 .chart-title { font-size: 22rpx; font-weight: 600; color: var(--muted-fg); }
 .bar-canvas { width: 100%; height: 190rpx; margin-top: 10rpx; }
+.chart-empty { height: 190rpx; display: flex; align-items: center; justify-content: center; font-size: 24rpx; color: var(--muted-fg); }
+
+.gen-btn { display: flex; align-items: center; justify-content: center; gap: 12rpx; }
+.gen-hint { margin-top: 14rpx; font-size: 21rpx; text-align: center; line-height: 1.5; }
+.ic20w { width: 32rpx; height: 32rpx; }
 
 .list-wrap { margin-top: 22rpx; }
 .list-wrap { padding-bottom: 10rpx; }
 .loading-list .mrow,
 .mistake-items .mrow { margin-bottom: 16rpx; }
 .mrow { display: flex; align-items: center; gap: 18rpx; padding: 24rpx; }
-.mrow--on { box-shadow: 0 0 0 4rpx var(--primary), 0 3rpx 12rpx rgba(28,51,84,0.06); }
 .subject-badge {
   width: 80rpx; height: 80rpx; border-radius: 22rpx; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
@@ -19,20 +23,8 @@
 .mrow__right { display: flex; align-items: center; gap: 9rpx; flex-shrink: 0; }
 .ic16 { width: 27rpx; height: 27rpx; }
 
-.sel-bar {
-  padding: 20rpx 24rpx; border-radius: 24rpx;
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--secondary);
-}
-.sel-bar__txt { color: var(--primary); font-size: 25rpx; font-weight: 600; }
-.sel-bar__btn {
-  padding: 12rpx 22rpx; border-radius: 18rpx;
-  display: flex; align-items: center; gap: 7rpx;
-  color: #fff; background: var(--primary); font-size: 21rpx; font-weight: 600;
-}
-
 .fab {
-  position: fixed; right: 38rpx; bottom: 158rpx; z-index: 20;
+  position: fixed; right: 38rpx; bottom: calc(env(safe-area-inset-bottom) + 178rpx); z-index: 20;
   width: 104rpx; height: 104rpx; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   background: var(--primary);

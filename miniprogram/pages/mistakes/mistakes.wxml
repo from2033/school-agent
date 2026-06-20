@@ -17,16 +17,20 @@
   <view class="section-pad">
     <view class="card chart-card">
       <view class="chart-title">各科错题分布</view>
-      <canvas type="2d" id="barChart" class="bar-canvas"></canvas>
+      <canvas wx:if="{{!chartEmpty}}" type="2d" id="barChart" class="bar-canvas"></canvas>
+      <view wx:else class="chart-empty">暂无错题数据，上传后自动统计</view>
     </view>
   </view>
 
-  <view class="section-pad list-wrap">
-    <view wx:if="{{selectedCount > 0}}" class="sel-bar">
-      <text class="sel-bar__txt">已选 {{selectedCount}} 道</text>
-      <view class="sel-bar__btn" bindtap="printSelected"><image class="ic16" src="{{ic.printerWhite}}" /> 打印选中</view>
-    </view>
+  <view wx:if="{{!chartEmpty}}" class="section-pad" style="margin-top:22rpx;">
+    <button class="btn-primary gen-btn" loading="{{genLoading}}" disabled="{{genLoading}}" bindtap="genPaper">
+      <image wx:if="{{!genLoading}}" class="ic20w" src="{{ic.paperWhite}}" />
+      {{genLoading ? 'AI 出题中…' : '生成本阶段练习卷'}}
+    </button>
+    <view class="gen-hint muted">按最近两周的错题出同类新题，生成「试卷+答案」两个 PDF，去文件页打印</view>
+  </view>
 
+  <view class="section-pad list-wrap">
     <view wx:if="{{loading}}" class="loading-list">
       <view wx:for="{{[1,2,3,4]}}" wx:key="*this" class="card mrow">
         <view class="skeleton" style="width:80rpx;height:80rpx;border-radius:22rpx"></view>
@@ -43,16 +47,13 @@
     </view>
 
     <view wx:else class="mistake-items">
-      <view wx:for="{{list}}" wx:key="id" class="card mrow {{selected[item.id] ? 'mrow--on' : ''}}">
-        <view class="radio {{selected[item.id] ? 'radio--on' : ''}}" data-id="{{item.id}}" catchtap="toggleSelect">
-          <view wx:if="{{selected[item.id]}}" class="radio__dot"></view>
-        </view>
+      <view wx:for="{{list}}" wx:key="id" class="card mrow card-tap" data-id="{{item.id}}" bindtap="openDetail">
         <view class="subject-badge" style="background:{{item.ink}}">{{item.subject}}</view>
-        <view class="mrow__body" data-id="{{item.id}}" bindtap="openDetail">
+        <view class="mrow__body">
           <view class="mrow__topic">{{item.topic}}</view>
           <view class="muted mrow__date">{{item.created_at}}</view>
         </view>
-        <view class="mrow__right" data-id="{{item.id}}" bindtap="openDetail">
+        <view class="mrow__right">
           <view class="badge badge--{{item.difficulty}}">
             {{item.difficulty === 'hard' ? '难' : item.difficulty === 'medium' ? '中' : '易'}}
           </view>

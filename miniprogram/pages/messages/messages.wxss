@@ -11,13 +11,8 @@
 .msg__star { width: 23rpx; height: 23rpx; }
 .msg__tag { margin-left: auto; font-size: 21rpx; font-weight: 600; }
 .msg__content { font-size: 26rpx; line-height: 1.62; color: var(--card-fg); }
-.msg__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 21rpx; }
+.msg__imgs { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 14rpx; }
+.msg__img { width: 200rpx; height: 200rpx; border-radius: 16rpx; background: var(--muted); }
+.msg__foot { display: flex; align-items: center; margin-top: 21rpx; }
 .msg__time { display: flex; align-items: center; gap: 6rpx; font-size: 21rpx; }
 .ic14 { width: 23rpx; height: 23rpx; }
-.msg__actions { display: flex; gap: 12rpx; }
-.msg__btn {
-  padding: 9rpx 18rpx; border-radius: 14rpx;
-  display: flex; align-items: center; gap: 6rpx;
-  color: var(--primary); background: var(--secondary); font-size: 21rpx; font-weight: 500;
-}
-.msg__btn--muted { color: var(--muted-fg); background: var(--muted); }

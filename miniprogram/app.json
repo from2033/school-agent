@@ -5,8 +5,7 @@
     "pages/mistake-detail/mistake-detail",
     "pages/upload/upload",
     "pages/messages/messages",
-    "pages/downloads/downloads",
-    "pages/print/print"
+    "pages/downloads/downloads"
   ],
   "window": {
     "navigationStyle": "custom",
@@ -23,8 +22,7 @@
       { "pagePath": "pages/home/home", "text": "首页" },
       { "pagePath": "pages/mistakes/mistakes", "text": "错题本" },
       { "pagePath": "pages/messages/messages", "text": "通知" },
-      { "pagePath": "pages/downloads/downloads", "text": "下载" },
-      { "pagePath": "pages/print/print", "text": "打印" }
+      { "pagePath": "pages/downloads/downloads", "text": "文件" }
     ]
   },
   "style": "v2",

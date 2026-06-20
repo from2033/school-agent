@@ -18,7 +18,17 @@
         </view>
       </view>
 
-      <image wx:if="{{imageUrl}}" src="{{imageUrl}}" mode="widthFix" class="d-img" />
+      <view wx:if="{{images.length}}" class="d-imgs">
+        <image
+          wx:for="{{images}}"
+          wx:key="*this"
+          src="{{item}}"
+          mode="widthFix"
+          class="d-img"
+          data-cur="{{item}}"
+          bindtap="previewImg"
+        />
+      </view>
       <view wx:else class="d-img-placeholder muted"><image class="ic44" src="{{ic.camera}}" /> 题目图片区域</view>
 
       <view class="tags">
@@ -53,7 +63,6 @@
       </view>
     </view>
 
-    <button class="btn-primary"><image class="ic20w" src="{{ic.printerWhite}}" /> 打印此题</button>
-    <button class="btn-secondary" bindtap="reupload"><image class="ic20" src="{{ic.upload}}" /> 再上传一题</button>
+    <button class="btn-primary" bindtap="addImage"><image class="ic20w" src="{{ic.uploadWhite}}" /> 给这道题再传一张</button>
   </view>
 </view>

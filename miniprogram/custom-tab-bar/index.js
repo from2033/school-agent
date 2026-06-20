@@ -7,8 +7,7 @@ const TABS = [
   { page: '/pages/home/home', text: '首页', name: 'home' },
   { page: '/pages/mistakes/mistakes', text: '错题本', name: 'book' },
   { page: '/pages/messages/messages', text: '通知', name: 'message' },
-  { page: '/pages/downloads/downloads', text: '下载', name: 'download' },
-  { page: '/pages/print/print', text: '打印', name: 'printer' },
+  { page: '/pages/downloads/downloads', text: '文件', name: 'download' },
 ];
 
 Component({

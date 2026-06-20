@@ -1,14 +1,24 @@
 <view class="tab-pad">
   <view class="header">
-    <view class="header__title">老师通知</view>
-    <view class="header__sub">今日 · 共 {{list.length}} 条消息</view>
+    <view class="row-between">
+      <view>
+        <view class="header__title">老师通知</view>
+        <view class="header__sub">{{dateLabel}} · 共 {{list.length}} 条</view>
+      </view>
+      <picker mode="date" value="{{date}}" bindchange="onDate">
+        <view class="datepick">
+          <image class="datepick__ic" src="{{ic.calendar}}" />{{date}}
+        </view>
+      </picker>
+    </view>
   </view>
 
   <scroll-view scroll-x class="chips">
     <view
       wx:for="{{filters}}"
       wx:key="key"
-      class="chip {{filter === item.key ? 'chip--active' : ''}}"
+      class="chip"
+      style="{{filter === item.key ? 'color:#fff;background:' + item.ink : 'color:' + item.ink + ';background:' + item.wash}}"
       data-key="{{item.key}}"
       bindtap="onFilter"
     >{{item.label}}</view>
@@ -27,7 +37,8 @@
     <!-- 空状态 -->
     <view wx:elif="{{list.length === 0}}" class="empty">
       <image class="empty__icon" src="{{ic.file}}" />
-      <view class="empty__txt">该分类暂无消息</view>
+      <view class="empty__txt">{{dateLabel}}暂无消息</view>
+      <view class="empty__txt" style="font-size:22rpx; margin-top:8rpx;">点右上角日期查看其他日期</view>
     </view>
 
     <block wx:else>
@@ -40,13 +51,22 @@
               <image wx:if="{{item.important}}" class="msg__star" src="{{ic.star}}" />
               <text class="msg__tag" style="color:{{item.style.ink}}">[{{item.style.label}}]</text>
             </view>
-            <view class="msg__content">{{item.content}}</view>
+            <view wx:if="{{item.content}}" class="msg__content">{{item.content}}</view>
+            <view wx:if="{{item.imageUrls.length}}" class="msg__imgs">
+              <image
+                wx:for="{{item.imageUrls}}"
+                wx:for-item="img"
+                wx:key="*this"
+                class="msg__img"
+                src="{{img}}"
+                mode="aspectFill"
+                data-urls="{{item.imageUrls}}"
+                data-cur="{{img}}"
+                catchtap="previewImage"
+              />
+            </view>
             <view class="msg__foot">
               <view class="muted msg__time"><image class="ic14" src="{{ic.clock}}" /> {{item.time}}</view>
-              <view class="msg__actions">
-                <view class="msg__btn"><image class="ic14" src="{{ic.printer}}" /> 打印</view>
-                <view class="msg__btn msg__btn--muted"><image class="ic14" src="{{ic.file}}" /> 备注</view>
-              </view>
             </view>
           </view>
         </view>

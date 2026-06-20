@@ -9,6 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent
 load_dotenv(BASE_DIR / ".env")
 
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
+# 出海代理：留空则自动读取系统代理（Windows WinINET），用于让 httpx/anthropic 走代理出网。
+# 服务器在国内、出口需经代理时必须有值，否则 api.anthropic.com 会偶发 403 "Request not allowed"。
+ANTHROPIC_PROXY = os.getenv("ANTHROPIC_PROXY", "").strip()
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me").strip()
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = 30
@@ -36,6 +39,8 @@ QQ_TEACHER_NAME_KEYWORDS = tuple(
 QQ_CAPTURE_ALL = os.getenv("QQ_CAPTURE_ALL", "false").strip().lower() in {
     "1", "true", "yes", "on",
 }
+# NapCat 的 OneBot httpServer 地址（用于下载群文件等主动调用）
+NAPCAT_API_URL = os.getenv("NAPCAT_API_URL", "http://127.0.0.1:3000").strip()
 
 DB_PATH = BASE_DIR / "app.db"
 UPLOAD_DIR = BASE_DIR / "uploads"
