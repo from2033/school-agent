@@ -19,6 +19,16 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def web_app_cache_control(request, call_next):
+    response = await call_next(request)
+    if request.url.path in {"/app", "/app/", "/app/manifest.webmanifest"}:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
+
 @app.on_event("startup")
 def _startup() -> None:
     init_db()
