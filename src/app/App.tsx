@@ -276,7 +276,7 @@ function UploadPanel({ close, completed }: { close: () => void; completed: (m: M
       <div className="content-stack">
         <section className="card">
           <label className="field-label">题目图片（最多 9 张）</label>
-          <input ref={input} hidden type="file" accept="image/*" capture="environment" multiple
+          <input ref={input} hidden type="file" accept="image/*" multiple
             onChange={(e) => setFiles(Array.from(e.target.files || []).slice(0, 9))} />
           {!files.length ? <button className="upload-zone" onClick={() => input.current?.click()}>
             <span><Camera size={28} /></span><b>拍照或选择图片</b><small>支持 JPG、PNG、HEIC</small>
@@ -334,7 +334,7 @@ function MistakeDetail({ id, close, changed }: { id: number; close: () => void; 
           <ul className="focus-list">{item.data.focus_points.map((p, i) => <li key={i}><span className={p.level} />{p.text}</li>)}</ul></section>}
         {!!item.data.steps.length && <section className="card"><div className="section-heading"><Sparkles size={18} />改进步骤</div>
           <ol className="step-list">{item.data.steps.map((s, i) => <li key={i}><span>{i + 1}</span>{s}</li>)}</ol></section>}
-        <input ref={input} hidden type="file" accept="image/*" capture="environment" multiple onChange={(e) => addImages(e.target.files)} />
+        <input ref={input} hidden type="file" accept="image/*" multiple onChange={(e) => addImages(e.target.files)} />
         <button className="secondary-button" disabled={adding} onClick={() => input.current?.click()}>
           {adding ? <LoaderCircle className="animate-spin" /> : <Camera />} {adding ? "重新分析中…" : "给这道题再传图片"}
         </button>

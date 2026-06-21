@@ -41,6 +41,7 @@ Page({
     wx.chooseMedia({
       count: 9,
       mediaType: ['image'],
+      sourceType: ['album', 'camera'],
       success: (res) => {
         const files = res.tempFiles.map((f) => f.tempFilePath);
         if (!files.length) return;
