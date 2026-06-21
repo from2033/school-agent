@@ -181,7 +181,7 @@ function Login({ onDone }: { onDone: () => void }) {
   );
 }
 
-function HomePage({ go }: { go: (tab: Tab) => void }) {
+function HomePage({ go, open }: { go: (tab: Tab) => void; open: (id: number) => void }) {
   const mistakes = useAsync(() => api<Mistake[]>("/api/mistakes"), []);
   const messages = useAsync(() => api<TeacherMessage[]>(`/api/messages?date=${today()}`), []);
   const files = useAsync(() => api<DownloadItem[]>(`/api/downloads?date=${today()}`), []);
@@ -226,8 +226,8 @@ function HomePage({ go }: { go: (tab: Tab) => void }) {
           <div className="card-title"><h2>最近错题</h2><button onClick={() => go("mistakes")}>查看全部<ChevronRight size={15} /></button></div>
           {mistakes.loading ? <Loading /> : (mistakes.data || []).length === 0 ? <Empty text="还没有错题" /> :
             <div className="compact-list">{mistakes.data?.slice(0, 3).map((m) =>
-              <div key={m.id}><span className="subject-dot" style={{ background: SUBJECT_COLORS[m.subject] || "#0d6e6e" }}>{m.subject.slice(0, 1)}</span>
-                <div><b>{m.topic}</b><small>{dateLabel(m.created_at)}</small></div><Difficulty value={m.difficulty} /></div>)}</div>}
+              <button key={m.id} onClick={() => open(m.id)}><span className="subject-dot" style={{ background: SUBJECT_COLORS[m.subject] || "#0d6e6e" }}>{m.subject.slice(0, 1)}</span>
+                <div><b>{m.topic}</b><small>{dateLabel(m.created_at)}</small></div><Difficulty value={m.difficulty} /><ChevronRight size={15} /></button>)}</div>}
         </section>
 
         <section className="card">
@@ -343,10 +343,11 @@ function MistakeDetail({ id, close, changed }: { id: number; close: () => void; 
   );
 }
 
-function MistakesPage({ goFiles }: { goFiles: () => void }) {
+function MistakesPage({ goFiles, openId, onOpened }: { goFiles: () => void; openId: number | null; onOpened: () => void }) {
   const [subject, setSubject] = useState("全部");
   const [upload, setUpload] = useState(false);
-  const [detail, setDetail] = useState<number | null>(null);
+  const [detail, setDetail] = useState<number | null>(openId ?? null);
+  useEffect(() => { if (openId != null) onOpened(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [paperBusy, setPaperBusy] = useState(false);
   const subjects = useAsync(() => api<string[]>("/api/stats/subjects"), []);
   const list = useAsync(() => api<Mistake[]>(`/api/mistakes${subject === "全部" ? "" : `?subject=${encodeURIComponent(subject)}`}`), [subject]);
@@ -461,6 +462,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>(
     initial === "mistakes" || initial === "messages" || initial === "files" ? initial : "home",
   );
+  const [pendingMistake, setPendingMistake] = useState<number | null>(null);
   useEffect(() => {
     const onPopState = () => {
       const value = new URLSearchParams(window.location.search).get("tab");
@@ -477,8 +479,8 @@ export default function App() {
   return (
     <div className="app-shell">
       <main className="app-content">
-        {tab === "home" && <HomePage go={setTab} />}
-        {tab === "mistakes" && <MistakesPage goFiles={() => setTab("files")} />}
+        {tab === "home" && <HomePage go={setTab} open={(id) => { setPendingMistake(id); setTab("mistakes"); }} />}
+        {tab === "mistakes" && <MistakesPage goFiles={() => setTab("files")} openId={pendingMistake} onOpened={() => setPendingMistake(null)} />}
         {tab === "messages" && <MessagesPage />}
         {tab === "files" && <FilesPage />}
       </main>
