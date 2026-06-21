@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import type { CSSProperties, FormEvent, ReactNode } from "react";
 import {
   AlertCircle, BarChart3, Bell, BookOpen, Camera, ChevronLeft, ChevronRight,
   Clock, Download, FileText, Home, LoaderCircle, LogOut, MessageSquare,
@@ -75,6 +75,32 @@ const dateLabel = (date?: string) => {
 };
 const formatSize = (n: number) =>
   n < 1024 ? `${n} B` : n < 1024 ** 2 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 ** 2).toFixed(1)} MB`;
+const tabHref = (tab: Tab) => `/app/?tab=${tab}`;
+
+function TabLink({
+  tab, go, className, children, style,
+}: {
+  tab: Tab;
+  go: (tab: Tab) => void;
+  className?: string;
+  children: ReactNode;
+  style?: CSSProperties;
+}) {
+  return (
+    <a
+      href={tabHref(tab)}
+      className={className}
+      style={style}
+      onClick={(e) => {
+        e.preventDefault();
+        window.history.pushState({}, "", tabHref(tab));
+        go(tab);
+      }}
+    >
+      {children}
+    </a>
+  );
+}
 
 function useAsync<T>(loader: () => Promise<T>, deps: unknown[]) {
   const [data, setData] = useState<T | null>(null);
@@ -167,9 +193,9 @@ function HomePage({ go }: { go: (tab: Tab) => void }) {
         <div className="hero-orb one" /><div className="hero-orb two" />
         <p>你好，家长</p><h1>今天也一起稳稳进步</h1>
         <div className="stat-row">
-          <button onClick={() => go("mistakes")}><strong>{mistakes.data?.length ?? "–"}</strong><span>累计错题</span></button>
-          <button onClick={() => go("messages")}><strong>{messages.data?.length ?? "–"}</strong><span>今日消息</span></button>
-          <button onClick={() => go("files")}><strong>{files.data?.length ?? "–"}</strong><span>今日文件</span></button>
+          <TabLink tab="mistakes" go={go}><strong>{mistakes.data?.length ?? "–"}</strong><span>累计错题</span></TabLink>
+          <TabLink tab="messages" go={go}><strong>{messages.data?.length ?? "–"}</strong><span>今日消息</span></TabLink>
+          <TabLink tab="files" go={go}><strong>{files.data?.length ?? "–"}</strong><span>今日文件</span></TabLink>
         </div>
       </section>
       <div className="content-stack home-stack">
@@ -204,16 +230,14 @@ function HomePage({ go }: { go: (tab: Tab) => void }) {
                 <div><b>{m.topic}</b><small>{dateLabel(m.created_at)}</small></div><Difficulty value={m.difficulty} /></div>)}</div>}
         </section>
 
-        <section className="card clickable-card" role="button" tabIndex={0}
-          onClick={() => go("messages")}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") go("messages"); }}>
-          <div className="card-title"><h2>今日老师消息</h2><button onClick={(e) => { e.stopPropagation(); go("messages"); }}>查看全部<ChevronRight size={15} /></button></div>
+        <section className="card">
+          <TabLink tab="messages" go={go} className="card-title card-title-link"><h2>今日老师消息</h2><span>查看全部<ChevronRight size={15} /></span></TabLink>
           {messages.loading ? <Loading /> : (messages.data || []).length === 0 ? <Empty text="今天暂无老师消息" /> :
             <div className="message-preview">{messages.data?.slice(0, 3).map((m) => {
               const meta = MESSAGE_META[m.type];
-              return <button key={m.id} onClick={() => go("messages")} style={{ background: meta.wash }}>
+              return <TabLink key={m.id} tab="messages" go={go} style={{ background: meta.wash }}>
                 <b>{m.teacher}</b><span style={{ color: meta.ink }}>{meta.label}</span><p>{m.content}</p>
-              </button>;
+              </TabLink>;
             })}</div>}
         </section>
       </div>
@@ -433,7 +457,18 @@ function FilesPage() {
 
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(Boolean(token()));
-  const [tab, setTab] = useState<Tab>("home");
+  const initial = new URLSearchParams(window.location.search).get("tab");
+  const [tab, setTab] = useState<Tab>(
+    initial === "mistakes" || initial === "messages" || initial === "files" ? initial : "home",
+  );
+  useEffect(() => {
+    const onPopState = () => {
+      const value = new URLSearchParams(window.location.search).get("tab");
+      setTab(value === "mistakes" || value === "messages" || value === "files" ? value : "home");
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
   if (!loggedIn) return <Login onDone={() => setLoggedIn(true)} />;
   const tabs = [
     ["home", "首页", Home], ["mistakes", "错题本", BookOpen],
@@ -449,9 +484,9 @@ export default function App() {
       </main>
       <button className="logout" title="退出登录" onClick={() => { clearToken(); setLoggedIn(false); }}><LogOut size={16} /></button>
       <nav className="bottom-nav">
-        {tabs.map(([key, label, Icon]) => <button key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}>
+        {tabs.map(([key, label, Icon]) => <TabLink key={key} tab={key} go={setTab} className={tab === key ? "active" : ""}>
           <Icon size={21} /><span>{label}</span>
-        </button>)}
+        </TabLink>)}
       </nav>
     </div>
   );
