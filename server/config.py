@@ -15,6 +15,7 @@ ANTHROPIC_PROXY = os.getenv("ANTHROPIC_PROXY", "").strip()
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-me").strip()
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_DAYS = 30
+WEB_ACCESS_CODE = os.getenv("WEB_ACCESS_CODE", "").strip()
 
 WX_APPID = os.getenv("WX_APPID", "").strip()
 WX_SECRET = os.getenv("WX_SECRET", "").strip()

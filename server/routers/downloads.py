@@ -1,4 +1,6 @@
 import io
+import mimetypes
+from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,6 +11,12 @@ from db import db
 from models import Download
 
 router = APIRouter(prefix="/api/downloads", tags=["downloads"])
+
+OFFICE_TYPES = {
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+}
 
 
 @router.get("", response_model=List[Download])
@@ -39,7 +47,9 @@ def download_file(download_id: int):
         raise HTTPException(status_code=404, detail="资料不存在")
 
     if row["file_path"]:
-        return FileResponse(row["file_path"], filename=row["name"])
+        suffix = Path(row["name"]).suffix.lower()
+        media_type = OFFICE_TYPES.get(suffix) or mimetypes.guess_type(row["name"])[0] or "application/octet-stream"
+        return FileResponse(row["file_path"], filename=row["name"], media_type=media_type)
 
     # seed 数据没有真实文件：返回占位文本，保证下载流程可演示
     placeholder = (

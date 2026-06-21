@@ -1,860 +1,458 @@
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import {
-  Upload,
-  BookOpen,
-  MessageSquare,
-  Printer,
-  Home,
-  Camera,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle,
-  ChevronRight,
-  Bell,
-  Search,
-  Star,
-  Clock,
-  FileText,
-  Trash2,
-  Plus,
-  X,
-  Download,
-  Send,
-  BarChart2,
-  Award,
-  Target,
-  Zap,
+  AlertCircle, BarChart3, Bell, BookOpen, Camera, ChevronLeft, ChevronRight,
+  Clock, Download, FileText, Home, LoaderCircle, LogOut, MessageSquare,
+  Plus, RefreshCw, Sparkles, Upload, X,
 } from "lucide-react";
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
+import {
+  Bar, BarChart, CartesianGrid, Cell, PolarAngleAxis, PolarGrid, Radar,
+  RadarChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
+import { api, assetUrl, clearToken, token, webLogin } from "../api";
 
-type Tab = "home" | "mistakes" | "messages" | "print";
-type MistakeView = "list" | "upload" | "detail";
+type Tab = "home" | "mistakes" | "messages" | "files";
+type MessageType = "homework" | "notice" | "praise" | "reminder";
 
-interface Mistake {
-  id: string;
+type Mistake = {
+  id: number;
   subject: string;
   topic: string;
-  date: string;
-  image?: string;
-  analysis: string;
-  suggestion: string;
+  image_path?: string;
+  images: string[];
+  analysis?: string;
+  focus_points: { text: string; level: string }[];
+  steps: string[];
   difficulty: "easy" | "medium" | "hard";
   tags: string[];
-  selected?: boolean;
-}
+  created_at: string;
+};
 
-interface Message {
-  id: string;
+type TeacherMessage = {
+  id: number;
   teacher: string;
   avatar: string;
   content: string;
   time: string;
-  type: "homework" | "notice" | "praise" | "reminder";
-  important?: boolean;
-}
+  date?: string;
+  type: MessageType;
+  important: boolean;
+  images: string[];
+};
 
-const SUBJECTS = ["数学", "语文", "英语", "物理", "化学", "历史"];
+type DownloadItem = {
+  id: number;
+  name: string;
+  subject?: string;
+  size_bytes: number;
+  created_at?: string;
+};
+
+type RadarPoint = { subject: string; value: number; fullMark: number };
+type CountPoint = { subject: string; count: number };
+
 const SUBJECT_COLORS: Record<string, string> = {
-  数学: "#0d6e6e",
-  语文: "#f59e0b",
-  英语: "#6366f1",
-  物理: "#e53e3e",
-  化学: "#10b981",
-  历史: "#ec4899",
+  语文: "#d97706", 数学: "#0d6e6e", 英语: "#6366f1",
+  物理: "#e53e3e", 化学: "#10b981", 历史: "#ec4899",
 };
 
-const radarData = [
-  { subject: "数学", value: 68, fullMark: 100 },
-  { subject: "语文", value: 85, fullMark: 100 },
-  { subject: "英语", value: 72, fullMark: 100 },
-  { subject: "物理", value: 54, fullMark: 100 },
-  { subject: "化学", value: 78, fullMark: 100 },
-  { subject: "历史", value: 91, fullMark: 100 },
-];
-
-const mistakeCountData = [
-  { subject: "数学", count: 12 },
-  { subject: "语文", count: 4 },
-  { subject: "英语", count: 8 },
-  { subject: "物理", count: 15 },
-  { subject: "化学", count: 6 },
-  { subject: "历史", count: 2 },
-];
-
-const INITIAL_MISTAKES: Mistake[] = [
-  {
-    id: "1",
-    subject: "数学",
-    topic: "二次函数图像平移",
-    date: "2024-06-17",
-    analysis: "对函数图像的平移方向理解有误，混淆了左移右移与正负号的关系。",
-    suggestion: "重点复习函数图像变换规律，建议用坐标纸亲手画出不同参数下的图像，加深直觉理解。",
-    difficulty: "hard",
-    tags: ["函数", "图像变换", "代数"],
-  },
-  {
-    id: "2",
-    subject: "物理",
-    topic: "牛顿第三定律应用",
-    date: "2024-06-16",
-    analysis: "分不清作用力与反作用力的施力体，在受力分析时出现多余力或遗漏力的情况。",
-    suggestion: "每次受力分析前先明确研究对象，用不同颜色标注不同物体的受力，反复练习直到形成习惯。",
-    difficulty: "medium",
-    tags: ["力学", "受力分析"],
-  },
-  {
-    id: "3",
-    subject: "英语",
-    topic: "定语从句关系词选择",
-    date: "2024-06-15",
-    analysis: "which 和 that 的使用场景混淆，限制性定语从句与非限制性定语从句区分不清。",
-    suggestion: "整理一份关系词选择口诀卡片，每天早读时背诵，配合10道专项练习题巩固。",
-    difficulty: "medium",
-    tags: ["语法", "从句", "关系词"],
-  },
-  {
-    id: "4",
-    subject: "数学",
-    topic: "概率计算：排列组合",
-    date: "2024-06-14",
-    analysis: "在解决有重复元素的排列问题时，未能正确使用除法原理消除重复计数。",
-    suggestion: "专项练习「有重复元素的排列」题型，先从简单的3-4个元素开始，逐步增加复杂度。",
-    difficulty: "hard",
-    tags: ["概率", "组合数学"],
-  },
-  {
-    id: "5",
-    subject: "化学",
-    topic: "氧化还原反应配平",
-    date: "2024-06-13",
-    analysis: "电子转移数量计算正确，但在调整系数时破坏了原子守恒，最终结果有误。",
-    suggestion: "牢记配平步骤：先配平电子转移，再用观察法补氢氧，最后逐一检验各元素原子数。",
-    difficulty: "easy",
-    tags: ["化学方程式", "氧化还原"],
-  },
-];
-
-const MESSAGES: Message[] = [
-  {
-    id: "1",
-    teacher: "王老师（数学）",
-    avatar: "王",
-    content: "同学们，今晚作业：课本P45第3、5、7题，明天上课讲评。另外，本周五将进行第三单元小测，请同学们提前复习二次函数和基本不等式部分。",
-    time: "08:32",
-    type: "homework",
-    important: true,
-  },
-  {
-    id: "2",
-    teacher: "李老师（班主任）",
-    avatar: "李",
-    content: "家长们好！提醒一下，本周四（6月20日）下午3:30-4:30 有期末家长会，请各位家长准时参加。会议将在学校报告厅举行，请提前安排好时间。",
-    time: "09:15",
-    type: "notice",
-    important: true,
-  },
-  {
-    id: "3",
-    teacher: "张老师（英语）",
-    avatar: "张",
-    content: "今天课堂上小明同学的口语展示非常出色，发音准确，表达流畅，值得表扬！希望其他同学也积极开口练习，语言学习重在实践。",
-    time: "10:48",
-    type: "praise",
-  },
-  {
-    id: "4",
-    teacher: "赵老师（物理）",
-    avatar: "赵",
-    content: "作业收批结果：本次受力分析专项作业全班平均分78分，部分同学在牛三定律应用上仍有欠缺，请认真阅读我批注的错误并订正，明天交来检查。",
-    time: "14:20",
-    type: "reminder",
-  },
-  {
-    id: "5",
-    teacher: "陈老师（语文）",
-    avatar: "陈",
-    content: "本周阅读打卡情况：全班完成率92%，表现优秀！周记请在本周日晚前上交到钉钉作业本，题目自拟，字数不少于500字。",
-    time: "16:05",
-    type: "homework",
-  },
-];
-
-const msgTypeStyle: Record<Message["type"], { bg: string; label: string; color: string }> = {
-  homework: { bg: "bg-blue-50", label: "作业", color: "text-blue-600" },
-  notice: { bg: "bg-amber-50", label: "通知", color: "text-amber-600" },
-  praise: { bg: "bg-green-50", label: "表扬", color: "text-green-600" },
-  reminder: { bg: "bg-red-50", label: "提醒", color: "text-red-600" },
+const MESSAGE_META: Record<MessageType, { label: string; ink: string; wash: string }> = {
+  homework: { label: "作业", ink: "#2563eb", wash: "#eff6ff" },
+  notice: { label: "通知", ink: "#b45309", wash: "#fef3c7" },
+  praise: { label: "表扬", ink: "#047857", wash: "#d1fae5" },
+  reminder: { label: "提醒", ink: "#b91c1c", wash: "#fee2e2" },
 };
 
-function difficultyBadge(d: Mistake["difficulty"]) {
-  if (d === "hard") return <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 font-medium">难</span>;
-  if (d === "medium") return <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-600 font-medium">中</span>;
-  return <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-100 text-green-600 font-medium">易</span>;
+const today = () => {
+  const d = new Date();
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+};
+const dateLabel = (date?: string) => {
+  if (!date) return "";
+  const d = new Date(`${date.slice(0, 10)}T00:00:00`);
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+};
+const formatSize = (n: number) =>
+  n < 1024 ? `${n} B` : n < 1024 ** 2 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 ** 2).toFixed(1)} MB`;
+
+function useAsync<T>(loader: () => Promise<T>, deps: unknown[]) {
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const reload = useCallback(() => {
+    setLoading(true);
+    setError("");
+    loader().then(setData).catch((e) => setError(e.message)).finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+  useEffect(reload, [reload]);
+  return { data, loading, error, reload, setData };
 }
 
-// ── Home Tab ────────────────────────────────────────────────────────────────
-function HomeTab({ setTab }: { setTab: (t: Tab) => void }) {
+function Loading({ text = "加载中…" }: { text?: string }) {
+  return <div className="empty-state"><LoaderCircle className="animate-spin" size={24} /><span>{text}</span></div>;
+}
+
+function Empty({ text }: { text: string }) {
+  return <div className="empty-state"><BookOpen size={28} /><span>{text}</span></div>;
+}
+
+function ErrorBox({ text, retry }: { text: string; retry: () => void }) {
   return (
-    <div className="pb-6">
-      {/* Header */}
-      <div className="bg-primary px-5 pt-12 pb-8 text-white relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-40 h-40 rounded-full bg-white/5 -translate-y-12 translate-x-12" />
-        <div className="absolute right-12 bottom-0 w-24 h-24 rounded-full bg-white/5 translate-y-8" />
-        <p className="text-white/70 text-sm mb-1">你好，家长 👋</p>
-        <h1 className="text-2xl font-extrabold tracking-tight">小明的学习管家</h1>
-        <p className="text-white/60 text-xs mt-1">初三 · 班主任：李老师</p>
-        <div className="mt-5 flex gap-4">
-          <div className="flex-1 bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
-            <p className="text-2xl font-bold">47</p>
-            <p className="text-white/70 text-xs mt-0.5">累计错题</p>
-          </div>
-          <div className="flex-1 bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
-            <p className="text-2xl font-bold">5</p>
-            <p className="text-white/70 text-xs mt-0.5">今日消息</p>
-          </div>
-          <div className="flex-1 bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
-            <p className="text-2xl font-bold">3</p>
-            <p className="text-white/70 text-xs mt-0.5">待打印</p>
-          </div>
-        </div>
+    <div className="error-box">
+      <AlertCircle size={18} /><span>{text}</span>
+      <button onClick={retry}><RefreshCw size={14} />重试</button>
+    </div>
+  );
+}
+
+function PageHeader({ title, subtitle, back }: { title: string; subtitle?: string; back?: () => void }) {
+  return (
+    <header className="page-header">
+      {back && <button className="back-button" onClick={back}><ChevronLeft size={22} /></button>}
+      <div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>
+    </header>
+  );
+}
+
+function Difficulty({ value }: { value: Mistake["difficulty"] }) {
+  const map = { easy: ["易", "easy"], medium: ["中", "medium"], hard: ["难", "hard"] };
+  return <span className={`difficulty ${map[value][1]}`}>{map[value][0]}</span>;
+}
+
+function Login({ onDone }: { onDone: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!code.trim()) return;
+    setBusy(true); setError("");
+    try { await webLogin(code); onDone(); }
+    catch (err) { setError((err as Error).message); }
+    finally { setBusy(false); }
+  }
+  return (
+    <main className="login-screen">
+      <div className="login-brand">
+        <div className="brand-icon"><BookOpen size={38} /></div>
+        <h1>学习管家</h1>
+        <p>错题分析 · 老师通知 · 学习资料</p>
       </div>
+      <form className="login-card" onSubmit={submit}>
+        <label htmlFor="access-code">家庭访问码</label>
+        <input id="access-code" type="password" inputMode="numeric" value={code}
+          onChange={(e) => setCode(e.target.value)} placeholder="请输入访问码" autoFocus />
+        {error && <p className="form-error">{error}</p>}
+        <button className="primary-button" disabled={busy || !code.trim()}>
+          {busy ? <LoaderCircle className="animate-spin" size={18} /> : <Sparkles size={18} />}
+          进入学习管家
+        </button>
+        <p className="login-hint">首次登录后，本设备会自动保持登录。</p>
+      </form>
+    </main>
+  );
+}
 
-      <div className="px-4 -mt-2 space-y-4">
-        {/* Quick actions */}
-        <div className="bg-card rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">快捷功能</p>
-          <div className="grid grid-cols-4 gap-3">
-            {[
-              { icon: <Camera size={22} />, label: "拍照上传", tab: "mistakes" as Tab, color: "bg-teal-50 text-primary" },
-              { icon: <BarChart2 size={22} />, label: "薄弱分析", tab: "mistakes" as Tab, color: "bg-purple-50 text-purple-600" },
-              { icon: <MessageSquare size={22} />, label: "老师通知", tab: "messages" as Tab, color: "bg-amber-50 text-amber-600" },
-              { icon: <Printer size={22} />, label: "批量打印", tab: "print" as Tab, color: "bg-blue-50 text-blue-600" },
-            ].map((a) => (
-              <button
-                key={a.label}
-                onClick={() => setTab(a.tab)}
-                className="flex flex-col items-center gap-1.5 hover:scale-105 transition-transform"
-              >
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${a.color}`}>{a.icon}</div>
-                <span className="text-xs font-medium text-foreground">{a.label}</span>
-              </button>
-            ))}
-          </div>
+function HomePage({ go }: { go: (tab: Tab) => void }) {
+  const mistakes = useAsync(() => api<Mistake[]>("/api/mistakes"), []);
+  const messages = useAsync(() => api<TeacherMessage[]>(`/api/messages?date=${today()}`), []);
+  const files = useAsync(() => api<DownloadItem[]>(`/api/downloads?date=${today()}`), []);
+  const radar = useAsync(() => api<RadarPoint[]>("/api/stats/radar"), []);
+
+  return (
+    <div>
+      <section className="hero">
+        <div className="hero-orb one" /><div className="hero-orb two" />
+        <p>你好，家长</p><h1>今天也一起稳稳进步</h1>
+        <div className="stat-row">
+          <button onClick={() => go("mistakes")}><strong>{mistakes.data?.length ?? "–"}</strong><span>累计错题</span></button>
+          <button onClick={() => go("messages")}><strong>{messages.data?.length ?? "–"}</strong><span>今日消息</span></button>
+          <button onClick={() => go("files")}><strong>{files.data?.length ?? "–"}</strong><span>今日文件</span></button>
         </div>
-
-        {/* Weak area radar */}
-        <div className="bg-card rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold text-sm">薄弱环节分析</p>
-            <span className="text-xs text-muted-foreground">近30天</span>
+      </section>
+      <div className="content-stack home-stack">
+        <section className="card">
+          <div className="section-label">快捷功能</div>
+          <div className="quick-grid">
+            <button onClick={() => go("mistakes")}><span className="quick-icon teal"><Camera /></span><b>上传错题</b></button>
+            <button onClick={() => go("mistakes")}><span className="quick-icon purple"><BarChart3 /></span><b>薄弱分析</b></button>
+            <button onClick={() => go("messages")}><span className="quick-icon amber"><MessageSquare /></span><b>老师通知</b></button>
+            <button onClick={() => go("files")}><span className="quick-icon blue"><FileText /></span><b>学习文件</b></button>
           </div>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="#e2e8f0" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11, fill: "#6b7a8d", fontFamily: "Nunito" }} />
-                <Radar name="掌握度" dataKey="value" stroke="#0d6e6e" fill="#0d6e6e" fillOpacity={0.18} strokeWidth={2} />
+        </section>
+
+        <section className="card">
+          <div className="card-title"><h2>薄弱环节</h2><span>按真实错题计算</span></div>
+          {radar.loading ? <Loading /> : radar.error ? <ErrorBox text={radar.error} retry={radar.reload} /> :
+            mistakes.data?.length === 0 ? <Empty text="上传错题后会生成掌握度分析" /> :
+            <div className="radar-wrap"><ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radar.data || []}>
+                <PolarGrid stroke="#dbe4ea" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: "#637083" }} />
+                <Radar dataKey="value" stroke="#0d6e6e" fill="#0d6e6e" fillOpacity={0.22} strokeWidth={2} />
               </RadarChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-2 space-y-2">
-            <div className="flex items-start gap-2 bg-red-50 rounded-xl p-3">
-              <AlertCircle size={15} className="text-red-500 mt-0.5 shrink-0" />
-              <p className="text-xs text-red-700">物理掌握度最低 (54%)，主要集中在力学受力分析，建议本周重点攻克。</p>
-            </div>
-            <div className="flex items-start gap-2 bg-green-50 rounded-xl p-3">
-              <CheckCircle size={15} className="text-green-600 mt-0.5 shrink-0" />
-              <p className="text-xs text-green-700">历史表现优秀 (91%)，可适当减少历史复习时间，将精力转移至薄弱学科。</p>
-            </div>
-          </div>
-        </div>
+            </ResponsiveContainer></div>}
+        </section>
 
-        {/* Recent mistakes */}
-        <div className="bg-card rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold text-sm">最近错题</p>
-            <button onClick={() => setTab("mistakes")} className="text-xs text-primary font-medium flex items-center gap-0.5">
-              查看全部 <ChevronRight size={13} />
-            </button>
-          </div>
-          <div className="space-y-2">
-            {INITIAL_MISTAKES.slice(0, 3).map((m) => (
-              <div key={m.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0"
-                  style={{ backgroundColor: SUBJECT_COLORS[m.subject] }}
-                >
-                  {m.subject}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{m.topic}</p>
-                  <p className="text-xs text-muted-foreground">{m.date}</p>
-                </div>
-                {difficultyBadge(m.difficulty)}
-              </div>
-            ))}
-          </div>
-        </div>
+        <section className="card">
+          <div className="card-title"><h2>最近错题</h2><button onClick={() => go("mistakes")}>查看全部<ChevronRight size={15} /></button></div>
+          {mistakes.loading ? <Loading /> : (mistakes.data || []).length === 0 ? <Empty text="还没有错题" /> :
+            <div className="compact-list">{mistakes.data?.slice(0, 3).map((m) =>
+              <div key={m.id}><span className="subject-dot" style={{ background: SUBJECT_COLORS[m.subject] || "#0d6e6e" }}>{m.subject.slice(0, 1)}</span>
+                <div><b>{m.topic}</b><small>{dateLabel(m.created_at)}</small></div><Difficulty value={m.difficulty} /></div>)}</div>}
+        </section>
 
-        {/* Today message preview */}
-        <div className="bg-card rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold text-sm">今日群消息</p>
-            <button onClick={() => setTab("messages")} className="text-xs text-primary font-medium flex items-center gap-0.5">
-              查看全部 <ChevronRight size={13} />
-            </button>
-          </div>
-          {MESSAGES.filter((m) => m.important).map((m) => {
-            const style = msgTypeStyle[m.type];
-            return (
-              <div key={m.id} className={`rounded-xl p-3 mb-2 last:mb-0 ${style.bg}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shrink-0">{m.avatar}</div>
-                  <span className="text-xs font-semibold text-foreground">{m.teacher}</span>
-                  <span className={`text-xs ${style.color} font-medium ml-auto`}>[{style.label}]</span>
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-2">{m.content}</p>
-              </div>
-            );
-          })}
-        </div>
+        <section className="card clickable-card" role="button" tabIndex={0}
+          onClick={() => go("messages")}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") go("messages"); }}>
+          <div className="card-title"><h2>今日老师消息</h2><button onClick={(e) => { e.stopPropagation(); go("messages"); }}>查看全部<ChevronRight size={15} /></button></div>
+          {messages.loading ? <Loading /> : (messages.data || []).length === 0 ? <Empty text="今天暂无老师消息" /> :
+            <div className="message-preview">{messages.data?.slice(0, 3).map((m) => {
+              const meta = MESSAGE_META[m.type];
+              return <button key={m.id} onClick={() => go("messages")} style={{ background: meta.wash }}>
+                <b>{m.teacher}</b><span style={{ color: meta.ink }}>{meta.label}</span><p>{m.content}</p>
+              </button>;
+            })}</div>}
+        </section>
       </div>
     </div>
   );
 }
 
-// ── Mistakes Tab ─────────────────────────────────────────────────────────────
-function MistakesTab() {
-  const [view, setView] = useState<MistakeView>("list");
-  const [mistakes, setMistakes] = useState<Mistake[]>(INITIAL_MISTAKES);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [detail, setDetail] = useState<Mistake | null>(null);
-  const [filterSubject, setFilterSubject] = useState<string>("全部");
-  const [uploading, setUploading] = useState(false);
-  const [uploadSubject, setUploadSubject] = useState("数学");
-  const [uploadTopic, setUploadTopic] = useState("");
+function UploadPanel({ close, completed }: { close: () => void; completed: (m: Mistake) => void }) {
+  const [files, setFiles] = useState<File[]>([]);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const input = useRef<HTMLInputElement>(null);
+  const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files]);
+  useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
 
-  const filtered = filterSubject === "全部" ? mistakes : mistakes.filter((m) => m.subject === filterSubject);
-
-  function toggleSelect(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  }
-
-  function handleUpload() {
-    if (!uploadTopic.trim()) return;
-    setUploading(true);
-    setTimeout(() => {
-      const newM: Mistake = {
-        id: Date.now().toString(),
-        subject: uploadSubject,
-        topic: uploadTopic,
-        date: new Date().toISOString().split("T")[0],
-        analysis: "AI正在分析该题目的知识点薄弱原因，已识别出概念理解偏差，建议重点复习相关基础定义。",
-        suggestion: "针对该题目，建议先回顾课本对应章节，再做同类型练习3-5道，巩固解题思路。",
-        difficulty: "medium",
-        tags: [uploadSubject, "新增"],
-      };
-      setMistakes((prev) => [newM, ...prev]);
-      setUploading(false);
-      setUploadTopic("");
-      setView("list");
-    }, 1800);
-  }
-
-  if (detail) {
-    return (
-      <div className="pb-6">
-        <div className="bg-primary px-5 pt-12 pb-5 text-white flex items-center gap-3">
-          <button onClick={() => setDetail(null)} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-            <X size={16} />
-          </button>
-          <h2 className="font-bold text-lg">错题详情</h2>
-        </div>
-        <div className="px-4 mt-4 space-y-4">
-          <div className="bg-card rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold"
-                style={{ backgroundColor: SUBJECT_COLORS[detail.subject] }}
-              >
-                {detail.subject}
-              </div>
-              <div>
-                <p className="font-semibold">{detail.topic}</p>
-                <p className="text-xs text-muted-foreground">{detail.date}</p>
-              </div>
-              <div className="ml-auto">{difficultyBadge(detail.difficulty)}</div>
-            </div>
-            <div className="h-40 bg-muted rounded-xl flex items-center justify-center text-muted-foreground text-sm">
-              <Camera size={24} className="mr-2 opacity-40" /> 题目图片区域
-            </div>
-            <div className="mt-3 flex flex-wrap gap-1">
-              {detail.tags.map((t) => (
-                <span key={t} className="text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">{t}</span>
-              ))}
-            </div>
-          </div>
-          <div className="bg-card rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Target size={16} className="text-red-500" />
-              <p className="font-semibold text-sm">错误分析</p>
-            </div>
-            <p className="text-sm text-foreground leading-relaxed">{detail.analysis}</p>
-          </div>
-          <div className="bg-card rounded-2xl p-4 shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap size={16} className="text-amber-500" />
-              <p className="font-semibold text-sm">改进建议</p>
-            </div>
-            <p className="text-sm text-foreground leading-relaxed">{detail.suggestion}</p>
-          </div>
-          <button className="w-full bg-primary text-primary-foreground rounded-2xl py-3.5 font-semibold flex items-center justify-center gap-2">
-            <Printer size={18} /> 打印此题
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (view === "upload") {
-    return (
-      <div className="pb-6">
-        <div className="bg-primary px-5 pt-12 pb-5 text-white flex items-center gap-3">
-          <button onClick={() => setView("list")} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-            <X size={16} />
-          </button>
-          <h2 className="font-bold text-lg">上传错题</h2>
-        </div>
-        <div className="px-4 mt-4 space-y-4">
-          <div className="bg-card rounded-2xl p-4 shadow-sm space-y-4">
-            <div>
-              <label className="text-sm font-semibold mb-2 block">选择学科</label>
-              <div className="flex flex-wrap gap-2">
-                {SUBJECTS.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setUploadSubject(s)}
-                    className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-colors ${
-                      uploadSubject === s ? "text-white" : "bg-muted text-muted-foreground"
-                    }`}
-                    style={uploadSubject === s ? { backgroundColor: SUBJECT_COLORS[s] } : {}}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-semibold mb-2 block">题目描述</label>
-              <input
-                type="text"
-                placeholder="例：二次函数图像平移方向判断"
-                value={uploadTopic}
-                onChange={(e) => setUploadTopic(e.target.value)}
-                className="w-full bg-input-background rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 ring-primary/30"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-semibold mb-2 block">上传题目图片</label>
-              <div className="h-44 border-2 border-dashed border-border rounded-2xl flex flex-col items-center justify-center gap-3 text-muted-foreground cursor-pointer hover:border-primary/40 hover:bg-secondary/30 transition-colors">
-                <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center">
-                  <Camera size={24} className="text-primary" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-foreground">点击拍照或选择图片</p>
-                  <p className="text-xs mt-0.5">支持 JPG、PNG 格式</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={handleUpload}
-            disabled={uploading || !uploadTopic.trim()}
-            className="w-full bg-primary disabled:opacity-50 text-primary-foreground rounded-2xl py-3.5 font-semibold flex items-center justify-center gap-2 transition-opacity"
-          >
-            {uploading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                AI 分析中…
-              </>
-            ) : (
-              <>
-                <Upload size={18} /> 上传并分析
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-    );
+  async function submit() {
+    if (!files.length) return;
+    setBusy(true); setError("");
+    try {
+      let result: Mistake | null = null;
+      for (const file of files) {
+        const form = new FormData();
+        form.append("image", file);
+        form.append("note", note);
+        result = await api<Mistake>("/api/mistakes", { method: "POST", body: form });
+      }
+      if (result) completed(result);
+    } catch (e) { setError((e as Error).message); }
+    finally { setBusy(false); }
   }
 
   return (
-    <div className="pb-6">
-      <div className="bg-primary px-5 pt-12 pb-5 text-white">
-        <h2 className="font-extrabold text-xl">错题本</h2>
-        <p className="text-white/60 text-xs mt-0.5">共 {mistakes.length} 道错题</p>
-      </div>
-
-      {/* Subject filter */}
-      <div className="px-4 py-3 flex gap-2 overflow-x-auto scrollbar-none">
-        {["全部", ...SUBJECTS].map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilterSubject(s)}
-            className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-              filterSubject === s ? "bg-primary text-white" : "bg-card text-muted-foreground"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-
-      {/* Stats bar */}
-      <div className="px-4 mb-3">
-        <div className="bg-card rounded-2xl p-3 shadow-sm">
-          <p className="text-xs text-muted-foreground mb-2 font-medium">各科错题分布</p>
-          <div className="h-24">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mistakeCountData} margin={{ top: 0, right: 0, left: -28, bottom: 0 }}>
-                <XAxis dataKey="subject" tick={{ fontSize: 10, fill: "#6b7a8d" }} />
-                <YAxis tick={{ fontSize: 10, fill: "#6b7a8d" }} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {mistakeCountData.map((entry) => (
-                    <Cell key={entry.subject} fill={SUBJECT_COLORS[entry.subject] || "#0d6e6e"} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
-      {/* List */}
-      <div className="px-4 space-y-2">
-        {selected.size > 0 && (
-          <div className="bg-primary/10 rounded-2xl p-3 flex items-center justify-between">
-            <span className="text-sm font-semibold text-primary">已选 {selected.size} 道</span>
-            <button className="bg-primary text-primary-foreground text-xs px-3 py-1.5 rounded-xl font-semibold flex items-center gap-1">
-              <Printer size={13} /> 打印选中
-            </button>
-          </div>
-        )}
-        {filtered.map((m) => (
-          <div
-            key={m.id}
-            className={`bg-card rounded-2xl p-3 shadow-sm flex items-center gap-3 transition-all ${
-              selected.has(m.id) ? "ring-2 ring-primary" : ""
-            }`}
-          >
-            <button
-              onClick={() => toggleSelect(m.id)}
-              className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-colors ${
-                selected.has(m.id) ? "bg-primary border-primary" : "border-border"
-              }`}
-            >
-              {selected.has(m.id) && <div className="w-2 h-2 rounded-full bg-white" />}
-            </button>
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0"
-              style={{ backgroundColor: SUBJECT_COLORS[m.subject] }}
-            >
-              {m.subject}
-            </div>
-            <button className="flex-1 min-w-0 text-left" onClick={() => setDetail(m)}>
-              <p className="text-sm font-semibold truncate">{m.topic}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{m.date}</p>
-            </button>
-            <div className="flex items-center gap-2 shrink-0">
-              {difficultyBadge(m.difficulty)}
-              <ChevronRight size={16} className="text-muted-foreground" />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* FAB */}
-      <button
-        onClick={() => setView("upload")}
-        className="fixed bottom-24 right-5 w-14 h-14 bg-primary text-white rounded-full shadow-lg flex items-center justify-center hover:scale-105 transition-transform z-20"
-      >
-        <Plus size={24} />
-      </button>
-    </div>
-  );
-}
-
-// ── Messages Tab ─────────────────────────────────────────────────────────────
-function MessagesTab() {
-  const [filter, setFilter] = useState<"all" | Message["type"]>("all");
-
-  const filters: { key: "all" | Message["type"]; label: string }[] = [
-    { key: "all", label: "全部" },
-    { key: "homework", label: "作业" },
-    { key: "notice", label: "通知" },
-    { key: "praise", label: "表扬" },
-    { key: "reminder", label: "提醒" },
-  ];
-
-  const filtered = filter === "all" ? MESSAGES : MESSAGES.filter((m) => m.type === filter);
-
-  return (
-    <div className="pb-6">
-      <div className="bg-primary px-5 pt-12 pb-5 text-white">
-        <h2 className="font-extrabold text-xl">老师通知</h2>
-        <p className="text-white/60 text-xs mt-0.5">今日 · 共 {MESSAGES.length} 条消息</p>
-      </div>
-
-      <div className="px-4 py-3 flex gap-2 overflow-x-auto scrollbar-none">
-        {filters.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-              filter === f.key ? "bg-primary text-white" : "bg-card text-muted-foreground"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="px-4 space-y-3">
-        {filtered.map((m) => {
-          const style = msgTypeStyle[m.type];
-          return (
-            <div key={m.id} className={`bg-card rounded-2xl p-4 shadow-sm ${m.important ? "ring-1 ring-amber-200" : ""}`}>
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm shrink-0">
-                  {m.avatar}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold text-sm">{m.teacher}</p>
-                    {m.important && <Star size={12} className="text-amber-400 fill-amber-400" />}
-                    <span className={`text-xs font-medium ml-auto ${style.color}`}>[{style.label}]</span>
-                  </div>
-                  <p className="text-sm text-foreground leading-relaxed">{m.content}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock size={11} /> {m.time}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button className="text-xs text-primary font-medium flex items-center gap-1 bg-secondary px-2.5 py-1 rounded-lg">
-                        <Printer size={11} /> 打印
-                      </button>
-                      <button className="text-xs text-muted-foreground font-medium flex items-center gap-1 bg-muted px-2.5 py-1 rounded-lg">
-                        <FileText size={11} /> 备注
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+    <div className="overlay-page">
+      <PageHeader title="上传错题" subtitle="AI 自动识别学科并分析" back={close} />
+      <div className="content-stack">
+        <section className="card">
+          <label className="field-label">题目图片（最多 9 张）</label>
+          <input ref={input} hidden type="file" accept="image/*" capture="environment" multiple
+            onChange={(e) => setFiles(Array.from(e.target.files || []).slice(0, 9))} />
+          {!files.length ? <button className="upload-zone" onClick={() => input.current?.click()}>
+            <span><Camera size={28} /></span><b>拍照或选择图片</b><small>支持 JPG、PNG、HEIC</small>
+          </button> :
+          <div className="image-grid">{previews.map((src, i) =>
+            <div key={src}><img src={src} /><button onClick={() => setFiles(files.filter((_, x) => x !== i))}><X size={14} /></button></div>)}
+            {files.length < 9 && <button className="add-image" onClick={() => input.current?.click()}><Plus /></button>}
+          </div>}
+          <label className="field-label note-label">补充说明（可选）</label>
+          <textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="例如：这道题总在最后一步出错" />
+        </section>
+        {error && <div className="form-error block">{error}</div>}
+        <button className="primary-button" disabled={!files.length || busy} onClick={submit}>
+          {busy ? <LoaderCircle className="animate-spin" /> : <Upload />} {busy ? "AI 分析中，请稍候…" : "上传并分析"}
+        </button>
       </div>
     </div>
   );
 }
 
-// ── Print Tab ────────────────────────────────────────────────────────────────
-function PrintTab() {
-  const [printItems, setPrintItems] = useState<{ id: string; label: string; type: string; selected: boolean }[]>([
-    { id: "p1", label: "二次函数图像平移（数学）", type: "mistake", selected: true },
-    { id: "p2", label: "牛顿第三定律应用（物理）", type: "mistake", selected: true },
-    { id: "p3", label: "定语从句关系词选择（英语）", type: "mistake", selected: false },
-    { id: "p4", label: "今日王老师作业通知", type: "message", selected: true },
-    { id: "p5", label: "今日李老师家长会通知", type: "message", selected: false },
-  ]);
-  const [printing, setPrinting] = useState(false);
-  const [printed, setPrinted] = useState(false);
+function MistakeDetail({ id, close, changed }: { id: number; close: () => void; changed: () => void }) {
+  const item = useAsync(() => api<Mistake>(`/api/mistakes/${id}`), [id]);
+  const [adding, setAdding] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
 
-  const selectedCount = printItems.filter((p) => p.selected).length;
-
-  function toggleItem(id: string) {
-    setPrintItems((prev) => prev.map((p) => (p.id === id ? { ...p, selected: !p.selected } : p)));
-  }
-
-  function handlePrint() {
-    setPrinting(true);
-    setTimeout(() => {
-      setPrinting(false);
-      setPrinted(true);
-    }, 2500);
+  async function addImages(files: FileList | null) {
+    if (!files?.length) return;
+    setAdding(true);
+    try {
+      const list = Array.from(files);
+      for (let i = 0; i < list.length; i++) {
+        const form = new FormData();
+        form.append("image", list[i]);
+        form.append("analyze", i === list.length - 1 ? "true" : "false");
+        await api(`/api/mistakes/${id}/images`, { method: "POST", body: form });
+      }
+      item.reload(); changed();
+    } catch (e) { alert((e as Error).message); }
+    finally { setAdding(false); }
   }
 
   return (
-    <div className="pb-6">
-      <div className="bg-primary px-5 pt-12 pb-5 text-white">
-        <h2 className="font-extrabold text-xl">远程打印</h2>
-        <p className="text-white/60 text-xs mt-0.5">选择内容，一键发送到打印机</p>
+    <div className="overlay-page">
+      <PageHeader title="错题详情" back={close} />
+      {item.loading ? <Loading text="读取分析结果…" /> : item.error ? <ErrorBox text={item.error} retry={item.reload} /> : item.data &&
+      <div className="content-stack">
+        <section className="card detail-head">
+          <div className="detail-title"><span className="subject-block" style={{ background: SUBJECT_COLORS[item.data.subject] || "#0d6e6e" }}>{item.data.subject}</span>
+            <div><h2>{item.data.topic}</h2><small>{dateLabel(item.data.created_at)}</small></div><Difficulty value={item.data.difficulty} /></div>
+          <div className="detail-images">{item.data.images.map((src) => <a href={assetUrl(src)} target="_blank" key={src}><img src={assetUrl(src)} /></a>)}</div>
+          <div className="tag-row">{item.data.tags.map((t) => <span key={t}>{t}</span>)}</div>
+        </section>
+        <section className="card"><div className="section-heading"><AlertCircle size={18} />错误分析</div><p className="analysis">{item.data.analysis}</p></section>
+        {!!item.data.focus_points.length && <section className="card"><div className="section-heading"><BarChart3 size={18} />重点关注</div>
+          <ul className="focus-list">{item.data.focus_points.map((p, i) => <li key={i}><span className={p.level} />{p.text}</li>)}</ul></section>}
+        {!!item.data.steps.length && <section className="card"><div className="section-heading"><Sparkles size={18} />改进步骤</div>
+          <ol className="step-list">{item.data.steps.map((s, i) => <li key={i}><span>{i + 1}</span>{s}</li>)}</ol></section>}
+        <input ref={input} hidden type="file" accept="image/*" capture="environment" multiple onChange={(e) => addImages(e.target.files)} />
+        <button className="secondary-button" disabled={adding} onClick={() => input.current?.click()}>
+          {adding ? <LoaderCircle className="animate-spin" /> : <Camera />} {adding ? "重新分析中…" : "给这道题再传图片"}
+        </button>
+      </div>}
+    </div>
+  );
+}
+
+function MistakesPage({ goFiles }: { goFiles: () => void }) {
+  const [subject, setSubject] = useState("全部");
+  const [upload, setUpload] = useState(false);
+  const [detail, setDetail] = useState<number | null>(null);
+  const [paperBusy, setPaperBusy] = useState(false);
+  const subjects = useAsync(() => api<string[]>("/api/stats/subjects"), []);
+  const list = useAsync(() => api<Mistake[]>(`/api/mistakes${subject === "全部" ? "" : `?subject=${encodeURIComponent(subject)}`}`), [subject]);
+  const counts = useAsync(() => api<CountPoint[]>("/api/stats/mistake-count"), []);
+
+  async function makePaper() {
+    setPaperBusy(true);
+    try {
+      const result = await api<{ count: number }>("/api/papers/generate", { method: "POST", body: JSON.stringify({ days: 14 }) });
+      if (confirm(`练习卷已生成，共 ${result.count} 道题。现在去文件页查看吗？`)) goFiles();
+    } catch (e) { alert((e as Error).message); }
+    finally { setPaperBusy(false); }
+  }
+
+  if (upload) return <UploadPanel close={() => setUpload(false)} completed={(m) => { setUpload(false); list.reload(); counts.reload(); setDetail(m.id); }} />;
+  if (detail != null) return <MistakeDetail id={detail} close={() => setDetail(null)} changed={() => { list.reload(); counts.reload(); }} />;
+
+  return (
+    <div>
+      <PageHeader title="错题本" subtitle={`共 ${list.data?.length ?? "–"} 道`} />
+      <div className="filter-strip">{["全部", ...(subjects.data || [])].map((s) =>
+        <button className={subject === s ? "active" : ""} onClick={() => setSubject(s)} key={s}>{s}</button>)}</div>
+      <div className="content-stack">
+        <section className="card chart-card">
+          <div className="card-title"><h2>各科错题分布</h2><button onClick={makePaper} disabled={paperBusy}>
+            {paperBusy ? <LoaderCircle className="animate-spin" size={14} /> : <Sparkles size={14} />}生成练习卷</button></div>
+          {(counts.data || []).every((x) => x.count === 0) ? <Empty text="暂无错题统计" /> :
+          <div className="bar-wrap"><ResponsiveContainer width="100%" height="100%"><BarChart data={counts.data || []} margin={{ left: -20 }}>
+            <CartesianGrid vertical={false} stroke="#edf1f4" /><XAxis dataKey="subject" tick={{ fontSize: 11 }} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="count" radius={[5, 5, 0, 0]}>
+              {(counts.data || []).map((x) => <Cell fill={SUBJECT_COLORS[x.subject] || "#0d6e6e"} key={x.subject} />)}
+            </Bar></BarChart></ResponsiveContainer></div>}
+        </section>
+        {list.loading ? <Loading /> : list.error ? <ErrorBox text={list.error} retry={list.reload} /> :
+          !list.data?.length ? <Empty text="这个分类还没有错题" /> :
+          <div className="mistake-list">{list.data.map((m) =>
+            <button key={m.id} onClick={() => setDetail(m.id)}>
+              <span className="subject-block" style={{ background: SUBJECT_COLORS[m.subject] || "#0d6e6e" }}>{m.subject}</span>
+              <div><b>{m.topic}</b><small>{dateLabel(m.created_at)}</small></div>
+              <Difficulty value={m.difficulty} /><ChevronRight size={17} />
+            </button>)}</div>}
       </div>
+      <button className="fab" onClick={() => setUpload(true)}><Plus /></button>
+    </div>
+  );
+}
 
-      <div className="px-4 mt-4 space-y-4">
-        {/* Printer status */}
-        <div className="bg-card rounded-2xl p-4 shadow-sm flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-green-50 flex items-center justify-center">
-            <Printer size={22} className="text-green-600" />
-          </div>
-          <div className="flex-1">
-            <p className="font-semibold text-sm">家里的打印机</p>
-            <p className="text-xs text-green-600 font-medium flex items-center gap-1 mt-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" /> 在线，墨水充足
-            </p>
-          </div>
-          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-lg font-medium">已连接</span>
-        </div>
-
-        {/* Print queue */}
-        <div className="bg-card rounded-2xl p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="font-semibold text-sm">待打印列表</p>
-            <button
-              onClick={() => setPrintItems((prev) => prev.map((p) => ({ ...p, selected: true })))}
-              className="text-xs text-primary font-medium"
-            >
-              全选
-            </button>
-          </div>
-          <div className="space-y-2">
-            {printItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => toggleItem(item.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left ${
-                  item.selected ? "bg-secondary" : "bg-muted/40"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                    item.selected ? "bg-primary border-primary" : "border-border"
-                  }`}
-                >
-                  {item.selected && <div className="w-2 h-2 rounded-full bg-white" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{item.label}</p>
-                </div>
-                <span
-                  className={`text-xs shrink-0 px-2 py-0.5 rounded-full font-medium ${
-                    item.type === "mistake" ? "bg-teal-100 text-teal-700" : "bg-amber-100 text-amber-700"
-                  }`}
-                >
-                  {item.type === "mistake" ? "错题" : "通知"}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Print settings */}
-        <div className="bg-card rounded-2xl p-4 shadow-sm">
-          <p className="font-semibold text-sm mb-3">打印设置</p>
-          <div className="space-y-3">
-            {[
-              { label: "纸张大小", value: "A4" },
-              { label: "打印方向", value: "纵向" },
-              { label: "份数", value: "1" },
-              { label: "双面打印", value: "关闭" },
-            ].map((s) => (
-              <div key={s.label} className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{s.label}</span>
-                <span className="text-sm font-medium">{s.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {printed ? (
-          <div className="bg-green-50 rounded-2xl p-5 flex flex-col items-center gap-3 text-center">
-            <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle size={28} className="text-green-600" />
-            </div>
-            <p className="font-bold text-green-700">打印任务已发送！</p>
-            <p className="text-xs text-green-600">共 {selectedCount} 个文件已发送到打印机，请稍候取件。</p>
-            <button onClick={() => setPrinted(false)} className="text-xs text-primary font-medium underline">
-              再次打印
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={handlePrint}
-            disabled={printing || selectedCount === 0}
-            className="w-full bg-primary disabled:opacity-50 text-primary-foreground rounded-2xl py-3.5 font-semibold flex items-center justify-center gap-2 transition-opacity"
-          >
-            {printing ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                发送中…
-              </>
-            ) : (
-              <>
-                <Send size={18} /> 发送到打印机（{selectedCount}）
-              </>
-            )}
-          </button>
-        )}
+function MessagesPage() {
+  const [type, setType] = useState<"all" | MessageType>("all");
+  const [date, setDate] = useState(today());
+  const query = `?date=${date}${type === "all" ? "" : `&type=${type}`}`;
+  const list = useAsync(() => api<TeacherMessage[]>(`/api/messages${query}`), [type, date]);
+  return (
+    <div>
+      <PageHeader title="老师通知" subtitle={`${dateLabel(date)} · ${list.data?.length ?? "–"} 条`} />
+      <div className="date-filter"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
+      <div className="filter-strip">{([["all", "全部"], ["homework", "作业"], ["notice", "通知"], ["praise", "表扬"], ["reminder", "提醒"]] as const).map(([key, label]) =>
+        <button className={type === key ? "active" : ""} onClick={() => setType(key)} key={key}>{label}</button>)}</div>
+      <div className="content-stack">
+        {list.loading ? <Loading /> : list.error ? <ErrorBox text={list.error} retry={list.reload} /> :
+          !list.data?.length ? <Empty text={`${dateLabel(date)}暂无消息`} /> :
+          <div className="messages-list">{list.data.map((m) => {
+            const meta = MESSAGE_META[m.type];
+            return <article className="card" key={m.id}>
+              <div className="message-head"><span className="avatar">{m.avatar}</span><div><b>{m.teacher}</b><small><Clock size={12} />{m.time}</small></div>
+                <span className="message-type" style={{ color: meta.ink, background: meta.wash }}>{meta.label}</span></div>
+              <p>{m.content}</p>
+              {!!m.images.length && <div className="message-images">{m.images.map((src) => <a href={assetUrl(src)} target="_blank" key={src}><img src={assetUrl(src)} /></a>)}</div>}
+            </article>;
+          })}</div>}
       </div>
     </div>
   );
 }
 
-// ── Root ─────────────────────────────────────────────────────────────────────
+function FilesPage() {
+  const [date, setDate] = useState(today());
+  const [fallbackDone, setFallbackDone] = useState(false);
+  const list = useAsync(() => api<DownloadItem[]>(`/api/downloads?date=${date}`), [date]);
+  const latest = useCallback(async () => {
+    try {
+      const all = await api<DownloadItem[]>("/api/downloads");
+      const newest = all.map((x) => x.created_at?.slice(0, 10) || "").sort().at(-1);
+      if (newest) setDate(newest);
+    } catch (e) { alert((e as Error).message); }
+  }, []);
+  useEffect(() => {
+    if (!list.loading && !list.error && list.data?.length === 0 && !fallbackDone) {
+      setFallbackDone(true);
+      latest();
+    }
+  }, [fallbackDone, latest, list.data, list.error, list.loading]);
+  return (
+    <div>
+      <PageHeader title="学习文件" subtitle={`${dateLabel(date)} · ${list.data?.length ?? "–"} 个文件`} />
+      <div className="date-filter"><input type="date" value={date} onChange={(e) => { setFallbackDone(true); setDate(e.target.value); }} /><button onClick={latest}>最近有文件</button></div>
+      <div className="content-stack">
+        {list.loading ? <Loading /> : list.error ? <ErrorBox text={list.error} retry={list.reload} /> :
+          !list.data?.length ? <Empty text={`${dateLabel(date)}暂无文件`} /> :
+          <div className="files-list">{list.data.map((f) =>
+            <a href={`/api/downloads/${f.id}/file`} target="_blank" className="card" key={f.id}>
+              <span className="file-icon"><FileText /></span><div><b>{f.name}</b><small>{f.subject || "群文件"} · {formatSize(f.size_bytes)}</small></div><Download size={19} />
+            </a>)}</div>}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  const [loggedIn, setLoggedIn] = useState(Boolean(token()));
   const [tab, setTab] = useState<Tab>("home");
-
-  const tabs: { key: Tab; icon: React.ReactNode; label: string }[] = [
-    { key: "home", icon: <Home size={22} />, label: "首页" },
-    { key: "mistakes", icon: <BookOpen size={22} />, label: "错题本" },
-    { key: "messages", icon: <MessageSquare size={22} />, label: "通知" },
-    { key: "print", icon: <Printer size={22} />, label: "打印" },
-  ];
-
+  if (!loggedIn) return <Login onDone={() => setLoggedIn(true)} />;
+  const tabs = [
+    ["home", "首页", Home], ["mistakes", "错题本", BookOpen],
+    ["messages", "通知", Bell], ["files", "文件", FileText],
+  ] as const;
   return (
-    <div
-      className="min-h-screen bg-background"
-      style={{ fontFamily: "'Noto Sans SC', 'Nunito', sans-serif", maxWidth: 430, margin: "0 auto", position: "relative" }}
-    >
-      {/* Status bar sim */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-30 pointer-events-none">
-        <div className="h-0" />
-      </div>
-
-      {/* Scrollable content */}
-      <div className="overflow-y-auto" style={{ paddingBottom: 80, scrollbarWidth: "none" }}>
-        {tab === "home" && <HomeTab setTab={setTab} />}
-        {tab === "mistakes" && <MistakesTab />}
-        {tab === "messages" && <MessagesTab />}
-        {tab === "print" && <PrintTab />}
-      </div>
-
-      {/* Bottom nav */}
-      <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-card border-t border-border z-20"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        <div className="flex">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`flex-1 flex flex-col items-center gap-1 py-3 transition-colors ${
-                tab === t.key ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              <span className={`transition-transform ${tab === t.key ? "scale-110" : ""}`}>{t.icon}</span>
-              <span className="text-[10px] font-semibold">{t.label}</span>
-              {tab === t.key && <span className="w-1 h-1 rounded-full bg-primary" />}
-            </button>
-          ))}
-        </div>
-      </div>
+    <div className="app-shell">
+      <main className="app-content">
+        {tab === "home" && <HomePage go={setTab} />}
+        {tab === "mistakes" && <MistakesPage goFiles={() => setTab("files")} />}
+        {tab === "messages" && <MessagesPage />}
+        {tab === "files" && <FilesPage />}
+      </main>
+      <button className="logout" title="退出登录" onClick={() => { clearToken(); setLoggedIn(false); }}><LogOut size={16} /></button>
+      <nav className="bottom-nav">
+        {tabs.map(([key, label, Icon]) => <button key={key} className={tab === key ? "active" : ""} onClick={() => setTab(key)}>
+          <Icon size={21} /><span>{label}</span>
+        </button>)}
+      </nav>
     </div>
   );
 }

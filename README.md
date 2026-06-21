@@ -4,8 +4,8 @@
 拍照上传错题 → **AI 自动分析薄弱原因并给改进建议** → 看薄弱环节雷达图、各科错题分布；
 老师群通知按类型分类展示；群资料一键下载；远程打印。
 
-> 本项目由同名 Figma 网页原型（`src/`，React + Vite）1:1 复刻为**微信原生小程序**而来。
-> 原型代码保留在 `src/`，仅作设计参考，不参与小程序运行。
+项目同时提供微信小程序和 Safari Web App。`src/` 是连接真实后端的 React + Vite
+移动端页面，可添加到 iPhone 主屏幕使用。
 
 ## 技术栈
 
@@ -24,7 +24,7 @@
 mini-study/
 ├─ miniprogram/   # 微信小程序（用微信开发者工具打开这个目录）
 ├─ server/        # FastAPI 后端 + AI + 同步脚本
-└─ src/           # 原 Figma React 原型（仅参考）
+└─ src/           # Safari Web App / PWA
 ```
 
 ## 一、启动后端
@@ -41,6 +41,29 @@ uvicorn main:app --reload   # http://localhost:8000
 - **不填 `WX_APPID/WX_SECRET`**：登录用 mock openid，本地联调无需真小程序 appid。
 - 首次启动自动建表并写入 seed 数据（错题、群通知、资料）。
 - 自测：`curl localhost:8000/` 应返回 `{"ok": true, ...}`。
+
+## Safari Web App（无需域名）
+
+在项目根目录构建，FastAPI 会把产物挂载到 `/app/`：
+
+```bash
+npm install
+npm run build
+```
+
+在 `server/.env` 配置首次登录访问码：
+
+```env
+WEB_ACCESS_CODE=换成随机访问码
+```
+
+iPhone 使用方式：
+
+1. Safari 打开 `http://服务器IP:8000/app/`
+2. 输入家庭访问码
+3. 点击分享按钮，选择「添加到主屏幕」
+
+没有 HTTPS 时仍可从主屏幕全屏打开；浏览器离线缓存等高级 PWA 能力会受限。
 
 ### 同步 QQ 群数据（可选）
 
@@ -74,6 +97,7 @@ python -m scripts.qq_sync --chat 群聊天记录.txt --files ./群文件
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | POST | `/api/auth/login` | code 换 openid，签发 JWT |
+| POST | `/api/auth/web-login` | Web 访问码登录，签发 JWT |
 | GET | `/api/mistakes?subject=` | 错题列表（可按学科过滤） |
 | POST | `/api/mistakes` | multipart 上传错题 + 触发 AI 分析 |
 | GET | `/api/mistakes/{id}` | 错题详情 |

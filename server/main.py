@@ -1,4 +1,6 @@
-"""FastAPI 入口：建表 + seed、挂载静态目录与路由、放开 CORS（小程序联调用）。"""
+"""FastAPI 入口：API + 上传目录 + Web App。"""
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -32,6 +34,11 @@ app.include_router(downloads.router)
 app.include_router(papers.router)
 app.include_router(stats.router)
 app.include_router(onebot.router)
+
+# Vite 构建后的 Safari Web App。路由放在所有 API 后面，避免吞掉 /api。
+WEB_DIST = Path(__file__).resolve().parent.parent / "dist"
+if WEB_DIST.exists():
+    app.mount("/app", StaticFiles(directory=WEB_DIST, html=True), name="web-app")
 
 
 @app.get("/")

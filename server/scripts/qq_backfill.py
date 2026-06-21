@@ -86,6 +86,7 @@ def fetch_group(gid: str) -> list[dict]:
 MAX_FILE_MB = 20           # 跳过超过此大小的文件（避免家长上传的大视频等）
 MAX_FILES_PER_GROUP = 25   # 每群最多回填的老师文件数
 TEACHER_KW = [k.strip() for k in env.get("QQ_TEACHER_NAME_KEYWORDS", "老师").split(",") if k.strip()]
+TEACHER_IDS = {k.strip() for k in env.get("QQ_TEACHER_IDS", "").split(",") if k.strip()}
 
 
 def backfill_files(gid: str) -> tuple[int, int, int]:
@@ -102,7 +103,8 @@ def backfill_files(gid: str) -> tuple[int, int, int]:
         if done >= MAX_FILES_PER_GROUP:
             break
         uploader = str(f.get("uploader_name") or "")
-        if not any(k in uploader for k in TEACHER_KW):
+        uploader_id = str(f.get("uploader") or "")
+        if uploader_id not in TEACHER_IDS and not any(k in uploader for k in TEACHER_KW):
             skip += 1
             continue
         size = int(f.get("file_size") or 0)

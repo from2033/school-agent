@@ -8,6 +8,11 @@ class LoginRequest(BaseModel):
     code: str
 
 
+class WebLoginRequest(BaseModel):
+    access_code: str
+    device_id: str
+
+
 class LoginResponse(BaseModel):
     token: str
     openid: str
